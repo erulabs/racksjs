@@ -1,6 +1,6 @@
-// Rax.js 0.2 by Seandon Mooy and Matt Ellsworth
-// A browser-friendly SDK for the Rackspace Cloud
-//
+// Racks.js - a javascript SDK for the Rackspace Cloud
+// by Seandon Mooy and Matt Ellsworth
+// 
 // TODOS:
 // [ ] flush out products to match rax.js 0.1
 // [ ] add where, find to RaxJS.prototype.resource
@@ -12,9 +12,6 @@
 // [ ] better methodology for flexable arguments
 // CODING GUIDELINES:
 // - Always return parsed JSON to the user, -never- stringified JSON
-// - Standardize API response as much as possible. See server.addresses for example
-//
-// Wrapper closure for browser/node compatability
 (function () {
 	// jQuery for nodejs
 	if (typeof window === "undefined") {
@@ -386,6 +383,4 @@
 	} else {
 		window.RaxJS = RaxJS;
 	}
-
 })();
-
