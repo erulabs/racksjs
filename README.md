@@ -13,7 +13,7 @@ by Seandon Mooy and Matt Ellsworth
     	if (rack.error) {
     		return false;
     	}
-    	# rack.PRODUCT.all (see documentation for other product-level methods - .where(), .find(), .create())
+    	# rack.PRODUCT.all (.where(), .find(), .create())
     	rack.cloudServersOpenStack.all(function (servers) {
     		servers.forEach(function (server){
     			# see documentation for instance-level methods
