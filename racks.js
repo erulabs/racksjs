@@ -94,7 +94,7 @@
 		RaxJS.prototype.resource = function (product, resourceName, resource) {
 			var _rax = this,
 				resourceString = resourceName,
-				url;
+				url, resourceModel;
 			if (typeof resource.resourceString !== "undefined") {
 				resourceString = resource.resourceString;
 			}
@@ -115,7 +115,10 @@
 						var response = [];
 						reply.forEach(function (rawResource) {
 							rawResource.target = url + '/' + rawResource.id;
-							response.push(new _rax.products[product.name][resourceName].model(_rax, product, rawResource));
+							resourceModel = new _rax.products[product.name][resourceName].model(_rax, product, rawResource);
+							resourceModel.product = product.name;
+							resourceModel.resource = resourceName;
+							response.push(resourceModel);
 						});
 						callback(response);
 					}).fail(function (error) {
@@ -333,6 +336,7 @@
 					}
 				},
 				'limits': {
+					resourceString: 'rates',
 					model: function (_rax, product, resource) {
 						return resource;
 					}
