@@ -1,4 +1,4 @@
-#!/usr/bin/node
+#!/usr/bin/env node
 var RacksJS = require('../racks.js');
 new RacksJS({
 	username: process.argv[2],
