@@ -16,7 +16,9 @@ by Seandon Mooy and Matt Ellsworth
         }
         // rack.PRODUCT.all (.where(), .find(), .create())
         rack.cloudServersOpenStack.servers.all(function (servers) {
-            console.log(servers);
+            servers.forEach(function (server) {
+                server.reboot();
+            });
         });
     });
 
