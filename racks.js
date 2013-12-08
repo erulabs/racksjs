@@ -51,8 +51,13 @@
 				console.log('No authentication object provided');
 				return false;
 			}
-			this.authenticate(authObject, function () {
-				_racks.buildProductCatalog();
+			this.authenticate(authObject, function (error) {
+				if (error) {
+					_racks.error = error;
+				} else {
+					_racks.error = false;
+					_racks.buildProductCatalog();
+				}
 				raxReadyCallback(_racks);
 			});
 		}
@@ -89,12 +94,9 @@
 				} } }
 			}).done(function (authObjectReply) {
 				_racks.authAccess = authObjectReply.access;
-				//console.log(authObjectReply);
-				RacksJS.error = false;
-				callback();
+				callback(false);
 			}).fail(function (xhr) {
-				RacksJS.error = 'Authenticate Failure', xhr.responseText;
-				callback();
+				callback('Authentication Failure', xhr.responseText);
 			});
 		};
 		// RESTful resource wrapper - uses product's endpoints and resource's uris to create common functions - all, where, etc.
@@ -107,7 +109,6 @@
 				resourceString = resource.resourceString;
 			}
 			url = product.target.publicURL + '/' + resourceString;
-			//console.log(product.name, resourceName, url, _racks.products[product.name][resourceName]);
 			return {
 				all: function (callback) {
 					_racks.ajax({
@@ -272,7 +273,6 @@
 							}).done(function (reply){
 								callback(reply);
 							}).fail(function (error) {
-								//callback(error);
 								console.log(resource.name, ".action('" + action + "') failure, error:", error);
 							});
 						};
