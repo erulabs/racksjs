@@ -10,11 +10,11 @@ by Seandon Mooy and Matt Ellsworth
         username: 'Rackspace Username',
         apiKey: 'Rackspace API KEY'
     }, function (rack) {
-        //Authentication error?
+        // Authentication error?
         if (rack.error) {
             return false;
         }
-        // rack.PRODUCT.all (.where(), .find(), .create())
+        // rack.PRODUCT.RESOURCE.all (.where(), .find(), .create())
         rack.cloudServersOpenStack.servers.all(function (servers) {
             servers.forEach(function (server) {
                 server.reboot();
