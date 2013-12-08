@@ -3,7 +3,7 @@
 // 
 // TODOS:
 // [ ] flush out products to match rax.js 0.1
-// [ ] add where, find to RaxJS.prototype.resource
+// [ ] add where, find to RacksJS.prototype.resource
 // [ ] add auth .expires awareness
 // [ ] add CORS support / Make sure everything works in the browser (flush out browser test)
 // [ ] add skeleton for things like autoscale (ie: non-resource functions of serviceCatalog)
@@ -14,20 +14,21 @@
 // - Always return parsed JSON to the user, -never- stringified JSON
 (function () {
 	// jQuery for nodejs
+	var jQuery, XMLHttpRequest;
 	if (typeof window === "undefined") {
-		var jQuery = require('jquery'),
-			XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
+		jQuery = require('jquery');
+		XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
 	} else if (typeof window.jQuery === "undefined") {
 		console.log('Missing jQuery!');
 	} else {
-		var jQuery = window.jQuery;
+		jQuery = window.jQuery;
 	}
 	// Core class
-	var RaxJS = (function () {
-		"use strict";
+	var RacksJS = (function () {
 		// Constructor
-		function RaxJS (authObject, raxReadyCallback) {
-			var _rax = this;
+		function RacksJS (authObject, raxReadyCallback) {
+			"use strict";
+			var _racks = this;
 			this.debugSetting = true;
 			this.authAccess = {
 				token: {
@@ -46,25 +47,29 @@
 					}
 				};
 			}
+			if (authObject === undefined) {
+				console.log('No authentication object provided');
+				return false;
+			}
 			this.authenticate(authObject, function () {
-				_rax.buildProductCatalog();
-				raxReadyCallback();
+				_racks.buildProductCatalog();
+				raxReadyCallback(_racks);
 			});
 		}
 		// HTTP Request wrapper - wrap's jQuery's .ajax, which is node/browser
 		// compatable with defaults suitable for Rackspace API
-		RaxJS.prototype.ajax = function (options) {
+		RacksJS.prototype.ajax = function (options) {
 			if (typeof options.data === "object") {
 				options.data = JSON.stringify(options.data);
 			}
-			if (typeof options.contentType === "undefined") {
+			if (options.contentType === undefined) {
 				options.contentType = "application/json; charset=utf-8";
 			}
-			if (typeof options.dataType === "undefined") {
+			if (options.dataType === undefined) {
 				options.dataType = "json";
 			}
 			if (this.authAccess.token.id) {
-				if (typeof options.headers === "undefined") {
+				if (options.headers === undefined) {
 					options.headers = {};
 				}
 				options.headers["X-Auth-Token"] = this.authAccess.token.id;
@@ -73,8 +78,8 @@
 			return jQuery.ajax(options);
 		};
 		// Authentication via identity api v2.0 - writes out access to this.authAccess and callsback
-		RaxJS.prototype.authenticate = function (authObjectRequest, callback) {
-			var _rax = this;
+		RacksJS.prototype.authenticate = function (authObjectRequest, callback) {
+			var _racks = this;
 			// TODO: validate presense on authObjectRequest options.
 			this.ajax({
 				type: 'POST',
@@ -83,26 +88,29 @@
 					'username': authObjectRequest.username, 'apiKey': authObjectRequest.apiKey
 				} } }
 			}).done(function (authObjectReply) {
-				_rax.authAccess = authObjectReply.access;
+				_racks.authAccess = authObjectReply.access;
 				//console.log(authObjectReply);
+				RacksJS.error = false;
 				callback();
 			}).fail(function (xhr) {
-				console.log('Authenticate Failure', xhr.responseText);
+				RacksJS.error = 'Authenticate Failure', xhr.responseText;
+				callback();
 			});
 		};
 		// RESTful resource wrapper - uses product's endpoints and resource's uris to create common functions - all, where, etc.
-		RaxJS.prototype.resource = function (product, resourceName, resource) {
-			var _rax = this,
+		RacksJS.prototype.resource = function (product, resourceName, resource) {
+			var _racks = this,
 				resourceString = resourceName,
-				url, resourceModel;
+				url,
+				resourceModel;
 			if (typeof resource.resourceString !== "undefined") {
 				resourceString = resource.resourceString;
 			}
 			url = product.target.publicURL + '/' + resourceString;
-			//console.log(product.name, resourceName, url, _rax.products[product.name][resourceName]);
+			//console.log(product.name, resourceName, url, _racks.products[product.name][resourceName]);
 			return {
 				all: function (callback) {
-					_rax.ajax({
+					_racks.ajax({
 						type: 'GET',
 						url: url
 					}).done(function (reply) {
@@ -115,7 +123,7 @@
 						var response = [];
 						reply.forEach(function (rawResource) {
 							rawResource.target = url + '/' + rawResource.id;
-							resourceModel = new _rax.products[product.name][resourceName].model(_rax, product, rawResource);
+							resourceModel = new _racks.products[product.name][resourceName].model(_racks, product, rawResource);
 							resourceModel.product = product.name;
 							resourceModel.resource = resourceName;
 							response.push(resourceModel);
@@ -136,23 +144,23 @@
 		};
 		// Interpret the ServiceCatalog (from authenticate()) and bind our functionality
 		// to easy-to-use objects according to product names and resources. For instance:
-		// This function interprets authAccess.serviceCatalog, matching them against RaxJS.prototype.products
-		// then binds RaxJS.PRODUCTNAME.RESOURCE.methods -> ie: RaxJS.cloudServersOpenStack.servers.all()
-		// these functions return arrays containing the objects you'll find above in RaxJS.prototype.products ->
+		// This function interprets authAccess.serviceCatalog, matching them against RacksJS.prototype.products
+		// then binds RacksJS.PRODUCTNAME.RESOURCE.methods -> ie: RacksJS.cloudServersOpenStack.servers.all()
+		// these functions return arrays containing the objects you'll find above in RacksJS.prototype.products ->
 		// this is where all the Rackspace functionality lives - ie:
-		// RaxJS.cloudServersOpenStack.servers.all(function (servers) {
+		// RacksJS.cloudServersOpenStack.servers.all(function (servers) {
 		//   servers.forEach(function (server) {
 		//     server.shutdown();
 		//   })
 		// });
-		// with the exception of creation - ie: RaxJS.cloudServersOpenStack.servers.new()
-		RaxJS.prototype.buildProductCatalog = function () {
-			var _rax = this;
+		// with the exception of creation - ie: RacksJS.cloudServersOpenStack.servers.new()
+		RacksJS.prototype.buildProductCatalog = function () {
+			var _racks = this;
 			// for each product in the service catalog
 			this.authAccess.serviceCatalog.forEach(function (rawProduct) {
 				// if we have a matching product defintion
-				if (typeof _rax.products[rawProduct.name] !== "undefined") {
-					_rax[rawProduct.name] = {
+				if (typeof _racks.products[rawProduct.name] !== "undefined") {
+					_racks[rawProduct.name] = {
 						endpoints: rawProduct.endpoints,
 						name: rawProduct.name,
 						target: false,
@@ -173,27 +181,27 @@
 						}
 					};
 					// select default region to start
-					_rax[rawProduct.name].selectEndpoint(_rax.authAccess.user['RAX-AUTH:defaultRegion']);
+					_racks[rawProduct.name].selectEndpoint(_racks.authAccess.user['RAX-AUTH:defaultRegion']);
 					// bind the resource functions to each resource listed within the product.
-					jQuery.each(_rax.products[rawProduct.name], function (resourceName, resource) {
-						_rax[rawProduct.name][resourceName] = _rax.resource(_rax[rawProduct.name], resourceName, resource);
+					jQuery.each(_racks.products[rawProduct.name], function (resourceName, resource) {
+						_racks[rawProduct.name][resourceName] = _racks.resource(_racks[rawProduct.name], resourceName, resource);
 					});
 				}
 			});
 		};
 		// Product catalog and mapping
-		RaxJS.prototype.products = {
+		RacksJS.prototype.products = {
 			// Products
 			'cloudServersOpenStack': {
 				// Resources
 				'servers': {
-					model: function (_rax, product, resource) {
+					model: function (_racks, product, resource) {
 						// Resource level functionality
 						/* get server details - http://docs.rackspace.com/servers/api/v2/cs-devguide/content/Get_Server_Details-d1e2623.html
 						.details(function (serverDetails) {})
 						*/
 						resource.details = function (callback) {
-							_rax.ajax({
+							_racks.ajax({
 								type: 'GET',
 								url: resource.links[0].href
 							}).done(function (reply){
@@ -223,7 +231,7 @@
 							if (networkLabel) {
 								url = url + '/' + networkLabel;
 							}
-							_rax.ajax({
+							_racks.ajax({
 								type: 'GET',
 								url: url
 							}).done(function (reply){
@@ -241,7 +249,7 @@
 						if success == false, errorMessage is provided
 						*/
 						resource.delete = function () {
-							_rax.ajax({
+							_racks.ajax({
 								type: 'DELETE',
 								url: resource.links[0].href
 							}).done(function (reply){
@@ -257,7 +265,7 @@
 							if (typeof callback === "undefined") {
 								callback = function () {};
 							}
-							_rax.ajax({
+							_racks.ajax({
 								type: 'POST',
 								url: resource.links[0].href + '/action',
 								data: actionObject
@@ -267,7 +275,7 @@
 								//callback(error);
 								console.log(resource.name, ".action('" + action + "') failure, error:", error);
 							});
-						}
+						};
 						//The following are simply shortcuts for the .action() method.
 						resource.changePassword = function (newPassword, callback) {
 							resource.action({ "changePassword": {
@@ -276,7 +284,7 @@
 						};
 						resource.reboot = function () {
 							var type = 'SOFT',
-								callback = function () {}
+								callback = function () {};
 							if (arguments.length == 1) {
 								callback = arguments[0];
 							} else if (arguments.length == 2) {
@@ -316,12 +324,12 @@
 					}
 				},
 				'images': {
-					model: function (_rax, product, resource) {
+					model: function (_racks, product, resource) {
 						return resource;
 					}
 				},
 				'flavors': {
-					model: function (_rax, product, resource) {
+					model: function (_racks, product, resource) {
 						return resource;
 					}
 				}
@@ -331,13 +339,13 @@
 					// Sometimes we have to remap the name as it comes back from the API - this is a slightly odd edge case
 					// service catalog is "loadBalancer", api only responds to "loadbalancer".
 					resourceString: 'loadbalancers',
-					model: function (_rax, product, resource) {
+					model: function (_racks, product, resource) {
 						return resource;
 					}
 				},
 				'limits': {
 					resourceString: 'rates',
-					model: function (_rax, product, resource) {
+					model: function (_racks, product, resource) {
 						return resource;
 					}
 				}
@@ -345,7 +353,7 @@
 			'cloudFiles': {
 				'containers': {
 					resourceString: '',	// cloud files has no resource name - just uses the base product url.
-					model: function (_rax, product, resource) {
+					model: function (_racks, product, resource) {
 						return resource;
 					}
 				}
@@ -367,7 +375,7 @@
 			},
 			'cloudDNS': {
 				'domains': {
-					model: function (_rax, product, resource) {
+					model: function (_racks, product, resource) {
 						return resource;
 					}
 				}
@@ -379,12 +387,12 @@
 
 			}
 		};
-		return RaxJS;
+		return RacksJS;
 	})();
 	// Browser + node friendly export
 	if (typeof module !== 'undefined' && typeof module.exports !== 'undefined') {
-		module.exports = RaxJS;
+		module.exports = RacksJS;
 	} else {
-		window.RaxJS = RaxJS;
+		window.RacksJS = RacksJS;
 	}
 })();

@@ -5,22 +5,19 @@ by Seandon Mooy and Matt Ellsworth
   This is the offical renaming of "raxjs" - additionally, it is based on the previously titled "v2" branch. This repo is currently under heavy construction in an attempt to get the rewrite up to speed with raxjs v1.
 
 ### Usage
-    require('racks.js').RaxJS({
-    	username: 'Rackspace Username',
-    	apiKey: 'Rackspace API KEY'
+    var RacksJS = require('../racks.js');
+    new RacksJS({
+        username: 'Rackspace Username',
+        apiKey: 'Rackspace API KEY'
     }, function (rack) {
-    	# Authentication error?
-    	if (rack.error) {
-    		return false;
-    	}
-    	# rack.PRODUCT.all (.where(), .find(), .create())
-    	rack.cloudServersOpenStack.all(function (servers) {
-    		servers.forEach(function (server){
-    			# see documentation for instance-level methods
-    			# these functions should -very- closely map the docs.rackspace.com function names
-    			server.shutdown();
-    		});
-    	});
+        //Authentication error?
+        if (rack.error) {
+            return false;
+        }
+        // rack.PRODUCT.all (.where(), .find(), .create())
+        rack.cloudServersOpenStack.servers.all(function (servers) {
+            console.log(servers);
+        });
     });
 
 ### Important info
