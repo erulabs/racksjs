@@ -8,8 +8,8 @@
 // [ ] add CORS support / Make sure everything works in the browser (flush out browser test)
 // [ ] add skeleton for things like autoscale (ie: non-resource functions of serviceCatalog)
 // [ ] create a github wiki / github.io will demo/how to/documentation
-// [ ] flush out some sensable tests
-// [ ] better methodology for flexable arguments
+// [ ] flush out some sensible tests
+// [ ] better methodology for flexible arguments
 // CODING GUIDELINES:
 // - Always return parsed JSON to the user, -never- stringified JSON
 (function () {
@@ -62,7 +62,7 @@
 			});
 		}
 		// HTTP Request wrapper - wrap's jQuery's .ajax, which is node/browser
-		// compatable with defaults suitable for Rackspace API
+		// compatible with defaults suitable for Rackspace API
 		RacksJS.prototype.ajax = function (options) {
 			if (typeof options.data === "object") {
 				options.data = JSON.stringify(options.data);
@@ -85,7 +85,7 @@
 		// Authentication via identity api v2.0 - writes out access to this.authAccess and callsback
 		RacksJS.prototype.authenticate = function (authObjectRequest, callback) {
 			var _racks = this;
-			// TODO: validate presense on authObjectRequest options.
+			// TODO: validate presence on authObjectRequest options.
 			this.ajax({
 				type: 'POST',
 				url: 'https://identity.api.rackspacecloud.com/v2.0/tokens',
@@ -96,9 +96,28 @@
 				_racks.authAccess = authObjectReply.access;
 				callback(false);
 			}).fail(function (xhr) {
-				callback('Authentication Failure', xhr.responseText);
+				callback('Authentication Failure: ' + xhr.responseText);
 			});
 		};
+		// Take a raw response and wrap it to the product.model, if it exists
+		RacksJS.prototype.model = function (product, resourceName, url, rawResources) {
+			var _racks = this;
+			// assuming we have a model to map to
+			if (_racks.products[product.name][resourceName].model !== undefined) {
+				var response = [];
+				rawResources.forEach(function (rawResource) {
+					rawResource.target = url + '/' + rawResource.id;
+					resourceModel = new _racks.products[product.name][resourceName].model(_racks, product, rawResource);
+					resourceModel.product = product.name;
+					resourceModel.resource = resourceName;
+					response.push(resourceModel);
+				});
+				return response;
+			// otherwise return the raw reply
+			} else {
+				return rawResources;
+			}
+		}
 		// RESTful resource wrapper - uses product's endpoints and resource's uris to create common functions - all, where, etc.
 		RacksJS.prototype.resource = function (product, resourceName, resource) {
 			var _racks = this,
@@ -115,21 +134,19 @@
 						type: 'GET',
 						url: url
 					}).done(function (reply) {
-						// inconsistent? behavior... I believe cloud files is the only offender so far
-						if (typeof reply[resourceName] !== "undefined") {
+						// inconsistent behavior wrapping. For instance, cloud files doesn't reply with a noun at all.
+						// cloudLoadBalancers.limits replies with "rates". loadBalancers only replies to /loadbalancers, etc.
+						// for the LB issue, we allow a workaround here.
+						// since "rates" have no actions, it's OK that we wont wrap them with a model
+						// Essentially, since reply[resourceName] IS undefined, we simply pass the reply
+						// since the reply is always an object, it won't be wrapped as a model
+						// run rack.cloudLoadBalancers.limits.all for an example of this. 
+						if (reply[resourceName] !== undefined) {
 							reply = reply[resourceName];
 						} else {
 							reply = reply;
 						}
-						var response = [];
-						reply.forEach(function (rawResource) {
-							rawResource.target = url + '/' + rawResource.id;
-							resourceModel = new _racks.products[product.name][resourceName].model(_racks, product, rawResource);
-							resourceModel.product = product.name;
-							resourceModel.resource = resourceName;
-							response.push(resourceModel);
-						});
-						callback(response);
+						callback(_racks.model(product, resourceName, url, reply));
 					}).fail(function (error) {
 						console.log(resourceName, '.all() failure on', url, 'error:', error);
 					});
@@ -343,12 +360,9 @@
 						return resource;
 					}
 				},
-				'limits': {
-					resourceString: 'rates',
-					model: function (_racks, product, resource) {
-						return resource;
-					}
-				}
+				// Sometimes there is no functionality associated with a reply.
+				// In that case, we define the resource so that we can do limits.all, but not the model
+				'limits': {}
 			},
 			'cloudFiles': {
 				'containers': {
@@ -359,19 +373,14 @@
 				}
 			},
 			'cloudFilesCDN': {
-
 			},
 			'cloudBlockStorage': {
-
 			},
 			'cloudDatabases': {
-
 			},
 			'autoscale': {
-
 			},
 			'cloudServers': {
-
 			},
 			'cloudDNS': {
 				'domains': {
@@ -381,10 +390,8 @@
 				}
 			},
 			'cloudMonitoring': {
-
 			},
 			'cloudBackup': {
-
 			}
 		};
 		return RacksJS;

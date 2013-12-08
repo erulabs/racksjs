@@ -4,12 +4,13 @@ new RacksJS({
     username: process.argv[2],
     apiKey: process.argv[3]
 }, function (rack) {
-    // Authentication error?
     if (rack.error) {
         console.log(rack.error);
         return false;
     }
-    // rack.PRODUCT.all (.where(), .find(), .create())
+    rack.cloudLoadBalancers.limits.all(function (limits) {
+        console.log(limits);
+    });
     rack.cloudServersOpenStack.servers.all(function (servers) {
         console.log(servers);
     });
