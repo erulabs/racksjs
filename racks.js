@@ -156,9 +156,8 @@
 				where: function () {
 				},
 				new: function () {
-
 				}
-			};
+			}
 		};
 		// Interpret the ServiceCatalog (from authenticate()) and bind our functionality
 		// to easy-to-use objects according to product names and resources. For instance:
@@ -174,21 +173,23 @@
 		// with the exception of creation - ie: RacksJS.cloudServersOpenStack.servers.new()
 		RacksJS.prototype.buildProductCatalog = function () {
 			var _racks = this;
+			// Todo: There ought to be a better way of doing this
+			RacksJS.prototype._racks = _racks;
 			// for each product in the service catalog
 			this.authAccess.serviceCatalog.forEach(function (rawProduct) {
 				// if we have a matching product defintion
-				if (typeof _racks.products[rawProduct.name] !== "undefined") {
+				if (_racks.products[rawProduct.name] !== undefined) {
 					_racks[rawProduct.name] = {
 						endpoints: rawProduct.endpoints,
 						name: rawProduct.name,
 						target: false,
 						selectEndpoint: function (targetDC) {
-							var _product = this;
-							if (typeof this.endpoints !== "undefined") {
+							if (this.endpoints !== undefined) {
 								if (this.endpoints.length > 1) {
 									this.endpoints.forEach(function (endpoint) {
 										if (endpoint.region === targetDC) {
-											_product.target = endpoint;
+											_racks[rawProduct.name].target = endpoint;
+											RacksJS.prototype.products[rawProduct.name].target = endpoint;
 										}
 									});
 								} else {
@@ -202,7 +203,10 @@
 					_racks[rawProduct.name].selectEndpoint(_racks.authAccess.user['RAX-AUTH:defaultRegion']);
 					// bind the resource functions to each resource listed within the product.
 					jQuery.each(_racks.products[rawProduct.name], function (resourceName, resource) {
-						_racks[rawProduct.name][resourceName] = _racks.resource(_racks[rawProduct.name], resourceName, resource);
+						if (resourceName !== "target") {
+							//console.log('binding', rawProduct.name, resourceName);
+							_racks[rawProduct.name][resourceName] = _racks.resource(_racks[rawProduct.name], resourceName, resource);
+						}
 					});
 				}
 			});
@@ -357,7 +361,60 @@
 					// service catalog is "loadBalancer", api only responds to "loadbalancer".
 					resourceString: 'loadbalancers',
 					model: function (_racks, product, resource) {
+						resource.listNodes = function (callback) {
+							_racks.ajax({
+								type: 'GET',
+								url: resource.target + '/nodes'
+							}).done(function (reply){
+								callback(reply.nodes);
+							}).fail(function (error) {
+								console.log(resource.name, '.details() failure, error:', error);
+							});
+						};
+						resource.addNode = function (newNodes, callback) {
+							// Todo: add error checking here
+							_racks.ajax({
+								type: 'POST',
+								url: resource.target + '/nodes',
+								data: {
+									"nodes": newNodes
+								}
+							}).done(function (reply){
+								callback(reply);
+							}).fail(function (error) {
+								console.log(resource.name, '.details() failure, error:', error);
+							});
+						};
+						resource.listVirtualIPs = function (callback) {
+							_racks.ajax({
+								type: 'GET',
+								url: resource.target + '/virtualips'
+							}).done(function (reply){
+								callback(reply.virtualIps);
+							}).fail(function (error) {
+								console.log(resource.name, '.details() failure, error:', error);
+							});
+						};
+						resource.vips = function (callback) {
+							resource.listVirtualIPs(callback);
+						};
 						return resource;
+					},
+					// Account level LB usage query
+					usage: function (callback) {
+						var product = RacksJS.prototype.products['cloudLoadBalancers'],
+							url = product.target.publicURL,
+							_racks = RacksJS.prototype._racks;
+						_racks.ajax({
+							type: 'GET',
+							// Todo: /loadbalancers/ ought to be prepended to our target automatically
+							// Its not, since this isn't a model level function
+							url: url + '/loadbalancers/usage'
+						}).done(function (reply){
+							callback(reply);
+						}).fail(function (error) {
+							console.log('cloudLoadBalancers .usage() failure, url:, ', url, 'error:', error);
+						});
 					}
 				},
 				// Sometimes there is no functionality associated with a reply.

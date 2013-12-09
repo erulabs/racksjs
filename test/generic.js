@@ -8,9 +8,35 @@ new RacksJS({
         console.log(rack.error);
         return false;
     }
-    rack.cloudLoadBalancers.limits.all(function (limits) {
-        console.log(limits);
-    });
+    //console.log(rack.cloudLoadBalancers.usage);
+    // Some products have "product-level" functionality - ie: special commands that are product specific
+    //  but do not have to do with a particular instance of a product
+    //  our general syntax for this looks like:
+    //rack.products.cloudLoadBalancers.loadBalancers.usage(function (usage){
+    //    console.log(usage);
+    //});
+    //
+    //
+    //rack.cloudLoadBalancers.loadBalancers.all(function (loadBalancers) {
+    //    //console.log(loadBalancers);
+    //    loadBalancers.forEach(function (loadBalancer){
+    //        loadBalancer.vips(function (vips) {
+    //            console.log(vips);
+    //        });
+    //        loadBalancer.addNode([
+    //            {
+    //                'address': '166.78.237.29',
+    //                'port': 80,
+    //                'condition': 'ENABLED',
+    //                'type': 'PRIMARY'
+    //            }
+    //        ], function () {
+    //            loadBalancer.listNodes(function (nodes) {
+    //                console.log('listing nodes', nodes);
+    //            });
+    //        });
+    //    });
+    //});
     rack.cloudServersOpenStack.servers.all(function (servers) {
         console.log(servers);
     });
