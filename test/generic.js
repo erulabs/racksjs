@@ -8,13 +8,13 @@ new RacksJS({
         console.log(rack.error);
         return false;
     }
-    //console.log(rack.cloudLoadBalancers.usage);
+    //console.log(rack.cloudLoadBalancers.loadBalancers);
     // Some products have "product-level" functionality - ie: special commands that are product specific
     //  but do not have to do with a particular instance of a product
     //  our general syntax for this looks like:
-    //rack.products.cloudLoadBalancers.loadBalancers.usage(function (usage){
-    //    console.log(usage);
-    //});
+    rack.cloudLoadBalancers.loadBalancers.usage(function (usage){
+        console.log(usage);
+    });
     //
     //
     //rack.cloudLoadBalancers.loadBalancers.all(function (loadBalancers) {
@@ -37,7 +37,7 @@ new RacksJS({
     //        });
     //    });
     //});
-    rack.cloudServersOpenStack.servers.all(function (servers) {
-        console.log(servers);
-    });
+    //rack.cloudServersOpenStack.servers.all(function (servers) {
+    //    console.log(servers);
+    //});
 });

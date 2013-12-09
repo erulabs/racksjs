@@ -4,8 +4,12 @@
 // TODOS:
 // [ ] flush out products to match rax.js 0.1
 // [ ] add where, find to RacksJS.prototype.resource
+// [ ] Rewrite endpoint/target system - currently there are two problems:
+//		1) we use .publicURL, when we should use a variable _useServiceNet_, etc.
+//		2) the targets are set once, which means you can't change the endpoints of existing objects easily
+//		3) .target is an object on the product, which sucks, because you cant iterate over the product to get the resources easily
+//		3.1) .target ought to be a string (or a function which gets the current target every time, based on _useServiceNet_, etc)
 // [ ] add auth .expires awareness
-// [ ] add CORS support / Make sure everything works in the browser (flush out browser test)
 // [ ] add skeleton for things like autoscale (ie: non-resource functions of serviceCatalog)
 // [ ] create a github wiki / github.io will demo/how to/documentation
 // [ ] flush out some sensible tests
@@ -128,36 +132,35 @@
 				resourceString = resource.resourceString;
 			}
 			url = product.target.publicURL + '/' + resourceString;
-			return {
-				all: function (callback) {
-					_racks.ajax({
-						type: 'GET',
-						url: url
-					}).done(function (reply) {
-						// inconsistent behavior wrapping. For instance, cloud files doesn't reply with a noun at all.
-						// cloudLoadBalancers.limits replies with "rates". loadBalancers only replies to /loadbalancers, etc.
-						// for the LB issue, we allow a workaround here.
-						// since "rates" have no actions, it's OK that we wont wrap them with a model
-						// Essentially, since reply[resourceName] IS undefined, we simply pass the reply
-						// since the reply is always an object, it won't be wrapped as a model
-						// run rack.cloudLoadBalancers.limits.all for an example of this. 
-						if (reply[resourceName] !== undefined) {
-							reply = reply[resourceName];
-						} else {
-							reply = reply;
-						}
-						callback(_racks.model(product, resourceName, url, reply));
-					}).fail(function (error) {
-						console.log(resourceName, '.all() failure on', url, 'error:', error);
-					});
-				},
-				find: function () {
-				},
-				where: function () {
-				},
-				new: function () {
-				}
-			}
+			resource.all = function (callback) {
+				_racks.ajax({
+					type: 'GET',
+					url: url
+				}).done(function (reply) {
+					// inconsistent behavior wrapping. For instance, cloud files doesn't reply with a noun at all.
+					// cloudLoadBalancers.limits replies with "rates". loadBalancers only replies to /loadbalancers, etc.
+					// for the LB issue, we allow a workaround here.
+					// since "rates" have no actions, it's OK that we wont wrap them with a model
+					// Essentially, since reply[resourceName] IS undefined, we simply pass the reply
+					// since the reply is always an object, it won't be wrapped as a model
+					// run rack.cloudLoadBalancers.limits.all for an example of this. 
+					if (reply[resourceName] !== undefined) {
+						reply = reply[resourceName];
+					} else {
+						reply = reply;
+					}
+					callback(_racks.model(product, resourceName, url, reply));
+				}).fail(function (error) {
+					console.log(resourceName, '.all() failure on', url, 'error:', error);
+				});
+			};
+			resource.find = function () {
+			};
+			resource.where = function () {
+			};
+			resource.new = function () {
+			};
+			return resource;
 		};
 		// Interpret the ServiceCatalog (from authenticate()) and bind our functionality
 		// to easy-to-use objects according to product names and resources. For instance:
@@ -404,6 +407,8 @@
 					usage: function (callback) {
 						var product = RacksJS.prototype.products['cloudLoadBalancers'],
 							url = product.target.publicURL,
+							// Get a reference to the instance -
+							// TODO: This is ugly, and shouldn't be nessisary
 							_racks = RacksJS.prototype._racks;
 						_racks.ajax({
 							type: 'GET',
