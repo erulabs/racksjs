@@ -515,17 +515,76 @@
 				}
 			},
 			'cloudFilesCDN': {
+				'containers': {
+					resourceString: '',
+					model: function (_racks, product, resource) {
+						return resource;
+					}
+				}
 			},
 			'cloudBlockStorage': {
+				'volumes': {
+					model: function (_racks, product, resource) {
+						return resource;
+					}
+				},
+				'types': {
+					model: function (_racks, product, resource) {
+						return resource;
+					}
+				},
+				'snapshots': {
+					model: function (_racks, product, resource) {
+						return resource;
+					}
+				}
 			},
 			'cloudDatabases': {
+				'instances': {
+					model: function (_racks, product, resource) {
+						return resource;
+					}
+				},
+				'flavors': {
+					model: function (_racks, product, resource) {
+						return resource;
+					}
+				},
+				'backups': {
+					model: function (_racks, product, resource) {
+						return resource;
+					}
+				}
 			},
-			'autoscale': {
-			},
+			// TODO: Rackspace autoscale. This might be a case where the product
+			// has _no_ .model(), -just- group level functions a deep and thorough knowledge of autoscale is required to proceed here
+			// We'll leave it out for now to avoid confusion
+			//'autoscale': {
+			//},
 			'cloudServers': {
+				'servers': {
+					model: function (_racks, product, resource) {
+						return resource;
+					}
+				},
+				'flavors': {
+					model: function (_racks, product, resource) {
+						return resource;
+					}
+				},
+				'images': {
+					model: function (_racks, product, resource) {
+						return resource;
+					}
+				}
 			},
 			'cloudDNS': {
 				'domains': {
+					model: function (_racks, product, resource) {
+						return resource;
+					}
+				},
+				'limits': {
 					model: function (_racks, product, resource) {
 						return resource;
 					}
