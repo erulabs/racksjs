@@ -8,15 +8,15 @@ new RacksJS({
         console.log(rack.error);
         return false;
     }
-    rack.cloudServersOpenStack.servers.new({
+    /*rack.cloudServersOpenStack.servers.new({
         // Gentoo 13.3
         "imageRef": "73764eb8-3c1c-42a9-8fff-71f6beefc6a7",
-        "name": "racksjs server creation test",
+        "name": "racksjs test 1",
         // 512 standard
         "flavorRef": "2"
     }, function (reply) {
         console.log(reply);
-    });
+    });*/
     //rack.cloudServersOpenStack.flavors.all(function (flavors) {
     //    console.log(flavors);
     //});
@@ -52,13 +52,13 @@ new RacksJS({
     //        });
     //    });
     //});
-    //rack.cloudServersOpenStack.servers.all(function (servers) {
-    //    servers.forEach(function (server) {
-    //        if (server.name === "seandonmooy.com") {
-    //            server.createImage('racksjs test', function (reply){
-    //                console.log(reply);
-    //            });
-    //        }
-    //    });
-    //});
+    rack.cloudServersOpenStack.servers.all(function (servers) {
+        servers.forEach(function (server) {
+            if (server.name === "racksjs test 1") {
+                server.details(function (details) {
+                    console.log(details);
+                });
+            }
+        });
+    });
 });

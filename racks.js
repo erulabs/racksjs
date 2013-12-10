@@ -105,11 +105,13 @@
 		};
 		// Take a raw response and wrap it to the product.model, if it exists
 		RacksJS.prototype.model = function (product, resourceName, url, rawResources) {
-			var _racks = this;
+			var _racks = this,
+				resourceModel,
+				singular = RacksJS.prototype.products[product.name][resourceName].singular;
 			// assuming we have a model to map to
 			if (_racks.products[product.name][resourceName].model !== undefined) {
 				var response = [];
-				if (rawResources instanceof Array) {
+				if (rawResources.forEach !== undefined) {
 					rawResources.forEach(function (rawResource) {
 						rawResource.target = url + '/' + rawResource.id;
 						resourceModel = new _racks.products[product.name][resourceName].model(_racks, product, rawResource);
@@ -118,8 +120,20 @@
 						response.push(resourceModel);
 					});
 				} else {
-					console.log('DEV ALERT! rawResources not an array!!! - rawResources:', rawResources);
-					return rawResources;
+					// TODO: combine with the above
+					// TODO: Assuming .new() always lands here, need a smart way of showing build status.
+					// Perhaps .new() should be product specific.
+					if (rawResources[singular] !== undefined) {
+						rawResources = rawResources[singular];
+						rawResources.target = url + '/' + rawResources.id;
+						resourceModel = new _racks.products[product.name][resourceName].model(_racks, product, rawResources);
+						resourceModel.product = product.name;
+						resourceModel.resource = resourceName;
+						return resourceModel;
+					} else {
+						console.log('.model() Unexpected reply for ', resourceName, '- not an array, nor matching singular "' + singular + '". Reply:', rawResources);
+						return rawResources;
+					}
 				}
 				return response;
 			// otherwise return the raw reply
@@ -133,8 +147,16 @@
 				resourceString = resourceName,
 				url,
 				resourceModel;
-			if (typeof resource.resourceString !== "undefined") {
+			if (resource.resourceString !== undefined) {
 				resourceString = resource.resourceString;
+			}
+			// Build out singular noun for every resource
+			if (resource.singular === undefined) {
+				if (resourceName.substr(-1) === 's') {
+					resource.singular = resourceName.substr(0, resourceName.length-1);
+				} else {
+					console.log('.resource() error for', resourceName, ': failed to determine singular noun');
+				}
 			}
 			url = product.target.publicURL + '/' + resourceString;
 			// inconsistent behavior wrapping. For instance, cloud files doesn't reply with a noun at all.
@@ -163,7 +185,16 @@
 					console.log(resourceName, '.all() failure on', url, 'error:', error);
 				});
 			};
-			resource.find = function () {
+			resource.find = function (uuid, callback) {
+				_racks.ajax({
+					type: 'GET',
+					url: url + '/' + uuid
+				}).done(function (reply) { 
+					reply = interpretAPIResponse(reply);
+					callback(_racks.model(product, resourceName, url, reply));
+				}).fail(function (error) {
+					console.log(resourceName, '.find() failure on', url, 'error:', error);
+				});
 			};
 			resource.where = function () {
 			};
@@ -258,7 +289,7 @@
 						resource.details = function (callback) {
 							_racks.ajax({
 								type: 'GET',
-								url: resource.links[0].href
+								url: resource.target
 							}).done(function (reply){
 								callback(reply.server);
 							}).fail(function (error) {
