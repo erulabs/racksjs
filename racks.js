@@ -109,13 +109,18 @@
 			// assuming we have a model to map to
 			if (_racks.products[product.name][resourceName].model !== undefined) {
 				var response = [];
-				rawResources.forEach(function (rawResource) {
-					rawResource.target = url + '/' + rawResource.id;
-					resourceModel = new _racks.products[product.name][resourceName].model(_racks, product, rawResource);
-					resourceModel.product = product.name;
-					resourceModel.resource = resourceName;
-					response.push(resourceModel);
-				});
+				if (rawResources instanceof Array) {
+					rawResources.forEach(function (rawResource) {
+						rawResource.target = url + '/' + rawResource.id;
+						resourceModel = new _racks.products[product.name][resourceName].model(_racks, product, rawResource);
+						resourceModel.product = product.name;
+						resourceModel.resource = resourceName;
+						response.push(resourceModel);
+					});
+				} else {
+					console.log('DEV ALERT! rawResources not an array!!! - rawResources:', rawResources);
+					return rawResources;
+				}
 				return response;
 			// otherwise return the raw reply
 			} else {
@@ -132,23 +137,27 @@
 				resourceString = resource.resourceString;
 			}
 			url = product.target.publicURL + '/' + resourceString;
+			// inconsistent behavior wrapping. For instance, cloud files doesn't reply with a noun at all.
+			// cloudLoadBalancers.limits replies with "rates". loadBalancers only replies to /loadbalancers, etc.
+			// for the LB issue, we allow a workaround here.
+			// since "rates" have no actions, it's OK that we wont wrap them with a model
+			// Essentially, since reply[resourceName] IS undefined, we simply pass the reply
+			// since the reply is always an object, it won't be wrapped as a model
+			// run rack.cloudLoadBalancers.limits.all for an example of this
+			function interpretAPIResponse (reply) {
+				if (reply[resourceName] !== undefined) {
+					reply = reply[resourceName];
+				} else {
+					reply = reply;
+				}
+				return reply;
+			};
 			resource.all = function (callback) {
 				_racks.ajax({
 					type: 'GET',
 					url: url
-				}).done(function (reply) {
-					// inconsistent behavior wrapping. For instance, cloud files doesn't reply with a noun at all.
-					// cloudLoadBalancers.limits replies with "rates". loadBalancers only replies to /loadbalancers, etc.
-					// for the LB issue, we allow a workaround here.
-					// since "rates" have no actions, it's OK that we wont wrap them with a model
-					// Essentially, since reply[resourceName] IS undefined, we simply pass the reply
-					// since the reply is always an object, it won't be wrapped as a model
-					// run rack.cloudLoadBalancers.limits.all for an example of this. 
-					if (reply[resourceName] !== undefined) {
-						reply = reply[resourceName];
-					} else {
-						reply = reply;
-					}
+				}).done(function (reply) { 
+					reply = interpretAPIResponse(reply);
 					callback(_racks.model(product, resourceName, url, reply));
 				}).fail(function (error) {
 					console.log(resourceName, '.all() failure on', url, 'error:', error);
@@ -158,7 +167,28 @@
 			};
 			resource.where = function () {
 			};
-			resource.new = function () {
+			resource.new = function (serverObj, callback) {
+				if (serverObj.flavorRef === undefined) {
+					return console.log(resourceName, '.new() - no flavorRef given - failing');
+				}
+				if (serverObj.name === undefined) {
+					return console.log(resourceName, '.new() - no name given - failing');
+				}
+				if (serverObj.imageRef === undefined) {
+					return console.log(resourceName, '.new() - no imageRef given - failing');
+				}
+				_racks.ajax({
+					type: 'POST',
+					url: url,
+					data: {
+						"server": serverObj
+					}
+				}).done(function (reply) {
+					reply = interpretAPIResponse(reply);
+					callback(_racks.model(product, resourceName, url, reply));
+				}).fail(function (error) {
+					console.log(resourceName, '.new() failure on', url, 'error:', error);
+				});
 			};
 			return resource;
 		};
@@ -337,8 +367,16 @@
 						resource.unrescue = function () {
 
 						};
-						resource.createImage = function () {
-
+						resource.createImage = function (imageRequest, callback) {
+							var imageRequestObj;
+							if (typeof imageRequest === "string") {
+								imageRequestObj = {
+									"name": imageRequest
+								}
+							} else {
+								imageRequestObj = imageRequest;
+							}
+							resource.action({ "createImage": imageRequestObj }, callback);
 						};
 						//http://docs.rackspace.com/servers/api/v2/cs-devguide/content/MetadataSection.html
 						resource.metadata = function () {
