@@ -18,7 +18,13 @@
 // - Always return parsed JSON to the user, -never- stringified JSON
 (function () {
 	// jQuery for nodejs
-	var jQuery, XMLHttpRequest;
+	var jQuery,
+		XMLHttpRequest,
+		// 0 = no logging
+		// 1 = log requests
+		// 2 = log replies
+		// 3 = log all
+		RacksVerbosity = 3;
 	if (typeof window === "undefined") {
 		jQuery = require('jquery');
 		XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
@@ -84,6 +90,11 @@
 				options.headers["X-Auth-Token"] = this.authAccess.token.id;
 			}
 			jQuery.support.cors = true;
+			if (RacksVerbosity === 1) {
+				console.log(options.type, options.url);
+			} else if (RacksVerbosity === 3) {
+				console.log('-> HTTP:', options, "\n==============================");
+			}
 			return jQuery.ajax(options);
 		};
 		// Authentication via identity api v2.0 - writes out access to this.authAccess and callsback
