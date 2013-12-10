@@ -17,6 +17,7 @@
 // CODING GUIDELINES:
 // - Always return parsed JSON to the user, -never- stringified JSON
 (function () {
+	"use strict";
 	// jQuery for nodejs
 	var jQuery,
 		XMLHttpRequest,
@@ -37,7 +38,6 @@
 	var RacksJS = (function () {
 		// Constructor
 		function RacksJS (authObject, raxReadyCallback) {
-			"use strict";
 			var _racks = this;
 			this.debugSetting = true;
 			this.authAccess = {
@@ -151,7 +151,7 @@
 			} else {
 				return rawResources;
 			}
-		}
+		};
 		// RESTful resource wrapper - uses product's endpoints and resource's uris to create common functions - all, where, etc.
 		RacksJS.prototype.resource = function (product, resourceName, resource) {
 			var _racks = this,
@@ -184,7 +184,7 @@
 					reply = reply;
 				}
 				return reply;
-			};
+			}
 			resource.all = function (callback) {
 				_racks.ajax({
 					type: 'GET',
@@ -414,7 +414,7 @@
 							if (typeof imageRequest === "string") {
 								imageRequestObj = {
 									"name": imageRequest
-								}
+								};
 							} else {
 								imageRequestObj = imageRequest;
 							}
@@ -485,7 +485,7 @@
 					},
 					// Account level LB usage query
 					usage: function (callback) {
-						var product = RacksJS.prototype.products['cloudLoadBalancers'],
+						var product = RacksJS.prototype.products.cloudLoadBalancers,
 							url = product.target.publicURL,
 							// Get a reference to the instance -
 							// TODO: This is ugly, and shouldn't be nessisary
