@@ -4,12 +4,14 @@ var RacksJS = require('../racks.js');
 new RacksJS({
     // Username and APIKEY for rackspace
     username: process.argv[2],
-    apiKey: process.argv[3]
+    apiKey: process.argv[3],
+    verbosity: 5
 }, function (rack) {
     if (rack.error) {
         console.log(rack.error);
         return false;
     }
+
     /*
     // Creating a new server
     rack.cloudServersOpenStack.servers.new({
@@ -55,14 +57,15 @@ new RacksJS({
             });
         });
     });*/
-    /* An example of grabbing all the details for all your next-gen servers
+    /* An example of grabbing all the details for all your next-gen servers */
     rack.cloudServersOpenStack.servers.all(function (servers) {
-        servers.forEach(function (server) {
-            server.details(function (details) {
-                console.log(details);
-            });
-        });
-    }); */
+        console.log(servers);
+        //servers.forEach(function (server) {
+        //    server.details(function (details) {
+        //        console.log(details);
+        //    });
+        //});
+    });
     /* Resource's .find(UUID)
     rack.cloudServersOpenStack.servers.find('35768af2-0229-4e1f-879b-d9abf10ff245', function(myServer) {
         console.log(myServer);

@@ -3,11 +3,12 @@
 	"author": "Seandon Mooy",
 	"contributors": [ "Matt Ellsworth" ],
 	"email": "seandon.mooy@gmail.com",
-	"version": "0.0.1",
+	"version": "0.1",
 	"dependencies": {
-		"jquery": "1.8.3"
+
 	},
 	"devDependencies": {
+
 	},
 	"engines": {
 		"node": ">=0.10"
