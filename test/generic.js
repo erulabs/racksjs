@@ -12,17 +12,21 @@ new RacksJS({
         return false;
     }
 
-    /*
     // Creating a new server
-    rack.cloudServersOpenStack.servers.new({
-        // Gentoo 13.3
-        "imageRef": "73764eb8-3c1c-42a9-8fff-71f6beefc6a7",
-        "name": "racksjs test 1",
-        // 512 standard
-        "flavorRef": "2"
+    //rack.cloudServersOpenStack.servers.new({
+    //    // Gentoo 13.3
+    //    "imageRef": "73764eb8-3c1c-42a9-8fff-71f6beefc6a7",
+    //    "name": "racksjs test 1",
+    //    // 512 standard
+    //    "flavorRef": "2"
+    //}, function (reply) {
+    //    console.log(reply);
+    //});
+    rack.cloudLoadBalancers.loadBalancers.new({
+        'name': 'LB RACKS TEST'
     }, function (reply) {
         console.log(reply);
-    });*/
+    });
     /*
     Listing flavors and images
     rack.cloudServersOpenStack.flavors.all(function (flavors) {
@@ -58,14 +62,14 @@ new RacksJS({
         });
     });*/
     /* An example of grabbing all the details for all your next-gen servers */
-    rack.cloudServersOpenStack.servers.all(function (servers) {
-        console.log(servers);
-        //servers.forEach(function (server) {
-        //    server.details(function (details) {
-        //        console.log(details);
-        //    });
-        //});
-    });
+    //rack.cloudServersOpenStack.servers.all(function (servers) {
+    //    console.log(servers);
+    //    //servers.forEach(function (server) {
+    //    //    server.details(function (details) {
+    //    //        console.log(details);
+    //    //    });
+    //    //});
+    //});
     /* Resource's .find(UUID)
     rack.cloudServersOpenStack.servers.find('35768af2-0229-4e1f-879b-d9abf10ff245', function(myServer) {
         console.log(myServer);

@@ -208,22 +208,34 @@
             };
             resource.where = function () {
             };
-            resource.new = function (serverObj, callback) {
-                if (serverObj.flavorRef === undefined) {
-                    return console.log(resourceName, '.new() - no flavorRef given - failing');
-                }
-                if (serverObj.name === undefined) {
-                    return console.log(resourceName, '.new() - no name given - failing');
-                }
-                if (serverObj.imageRef === undefined) {
-                    return console.log(resourceName, '.new() - no imageRef given - failing');
+            resource.new = function (newObjData, callback) {
+                // TODO: totally refactor .new() to be product specific. Not all resources have .new()
+                if (resourceName === "servers") {
+                    if (newObjData.flavorRef === undefined) {
+                        return console.log(resourceName, '.new() - no flavorRef given - failing');
+                    }
+                    if (newObjData.name === undefined) {
+                        return console.log(resourceName, '.new() - no name given - failing');
+                    }
+                    if (newObjData.imageRef === undefined) {
+                        return console.log(resourceName, '.new() - no imageRef given - failing');
+                    }
+                    var data = { "server": newObjData };
+                } else if (resourceName == "loadBalancers") {
+                    if (newObjData.virtualIps === undefined) {
+                        newObjData.virtualIps = [ { "type": "PUBLIC" }];
+                    }
+                    if (newObjData.protocol === undefined) {
+                        newObjData.protocol = "HTTP";
+                    }
+                    var data = {
+                        "loadBalancer": newObjData
+                    }
                 }
                 _racks.request({
                     method: 'POST',
                     url: url,
-                    data: {
-                        "server": serverObj
-                    }
+                    data: data
                 }, function (reply) {
                     reply = interpretAPIResponse(reply);
                     callback(_racks.model(product, resourceName, url, reply));

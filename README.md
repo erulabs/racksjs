@@ -14,7 +14,8 @@ Proper documentation and a lot more examples are soon to come - we're still miss
     new RacksJS({
         // Username and APIKEY for rackspace
         username: 'RACKSPACE USERNAME',
-        apiKey: 'RACKSPACE APIKEY'
+        apiKey: 'RACKSPACE APIKEY',
+        verbosity: 0
     }, function (rack) {
         if (rack.error) {
             console.log(rack.error);
