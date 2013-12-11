@@ -1,10 +1,11 @@
+/*jslint nomen: true*/
 // Racks.js - a javascript SDK for the Rackspace Cloud - https://github.com/erulabs/racksjs
 // by Seandon Mooy with contributions by Matt Ellsworth
 (function () {
     "use strict";
     var RacksJS = (function () {
         var http = require('https');
-        function RacksJS (authObject, raxReadyCallback) {
+        function RacksJS(authObject, raxReadyCallback) {
             var _racks = this;
             // Fail if not called with an authObject ({ username: 'foo', apikey: 'bar' ... })
             if (authObject === undefined) {
@@ -60,25 +61,28 @@
                 urlHost = urlParts[2],
                 urlPath,
                 requestObject;
-            urlParts.shift(); urlParts.shift(); urlParts.shift();
+            urlParts.shift();
+            urlParts.shift();
+            urlParts.shift();
             urlPath = '/' + urlParts.join('/');
             options.path = urlPath;
             options.host = urlHost;
             // set some defaults for node's https
             options.port = 443;
-            requestObject = http.request(options, function(reply) {
+            requestObject = http.request(options, function (reply) {
                 reply.setEncoding('utf8');
-                var replyBody = '';
+                var replyBody = '',
+                    parsedBody = false;
                 reply.on('data', function (chunk) {
                     replyBody = replyBody + chunk;
                 });
                 reply.on('end', function () {
                     try {
-                        var parsedBody = JSON.parse(replyBody);
+                        parsedBody = JSON.parse(replyBody);
                     } catch (e) {
                         console.log('JSON parse error! Raw reply:', replyBody, 'exception:', e);
                     }
-                    if (parsedBody !== undefined) {
+                    if (parsedBody) {
                         // Logging nonsense
                         if (_racks.verbosity === 2 || _racks.verbosity === 3) {
                             console.log(parsedBody);
@@ -105,9 +109,10 @@
                 method: 'POST',
                 url: 'https://identity.api.rackspacecloud.com/v2.0/tokens',
                 data: { 'auth': { 'RAX-KSKEY:apiKeyCredentials': {
-                    'username': authObjectRequest.username, 'apiKey': authObjectRequest.apiKey
+                    'username': authObjectRequest.username,
+                    'apiKey': authObjectRequest.apiKey
                 } } }
-            }, function(authObjectReply) {
+            }, function (authObjectReply) {
                 _racks.authAccess = authObjectReply.access;
                 callback(false);
             });
@@ -115,11 +120,11 @@
         // Take a raw response and wrap it to the product.model, if it exists
         RacksJS.prototype.model = function (product, resourceName, url, rawResources) {
             var _racks = this,
-                resourceModel,
-                singular = RacksJS.prototype.products[product.name][resourceName].singular;
+                resourceModel = false,
+                singular = RacksJS.prototype.products[product.name][resourceName].singular,
+                response = [];
             // assuming we have a model to map to
             if (_racks.products[product.name][resourceName].model !== undefined) {
-                var response = [];
                 if (rawResources.forEach !== undefined) {
                     rawResources.forEach(function (rawResource) {
                         rawResource.target = url + '/' + rawResource.id;
@@ -138,17 +143,16 @@
                         resourceModel = new _racks.products[product.name][resourceName].model(_racks, product, rawResources);
                         resourceModel.product = product.name;
                         resourceModel.resource = resourceName;
-                        return resourceModel;
+                        response = resourceModel;
                     } else {
                         console.log('.model() Unexpected reply for ', resourceName, '- not an array, nor matching singular "' + singular + '". Reply:', rawResources);
-                        return rawResources;
+                        response = rawResources;
                     }
                 }
-                return response;
-            // otherwise return the raw reply
             } else {
-                return rawResources;
+                response = rawResources;
             }
+            return response;
         };
         // RESTful resource wrapper - uses product's endpoints and resource's uris to create common functions - all, where, etc.
         RacksJS.prototype.resource = function (product, resourceName, resource) {
@@ -162,7 +166,7 @@
             // Build out singular noun for every resource
             if (resource.singular === undefined) {
                 if (resourceName.substr(-1) === 's') {
-                    resource.singular = resourceName.substr(0, resourceName.length-1);
+                    resource.singular = resourceName.substr(0, resourceName.length - 1);
                 } else {
                     console.log('.resource() error for', resourceName, ': failed to determine singular noun');
                 }
@@ -175,11 +179,9 @@
             // Essentially, since reply[resourceName] IS undefined, we simply pass the reply
             // since the reply is always an object, it won't be wrapped as a model
             // run rack.cloudLoadBalancers.limits.all for an example of this
-            function interpretAPIResponse (reply) {
+            function interpretAPIResponse(reply) {
                 if (reply[resourceName] !== undefined) {
                     reply = reply[resourceName];
-                } else {
-                    reply = reply;
                 }
                 return reply;
             }
@@ -187,7 +189,7 @@
                 _racks.request({
                     method: 'GET',
                     url: url
-                }, function (reply) { 
+                }, function (reply) {
                     reply = interpretAPIResponse(reply);
                     callback(_racks.model(product, resourceName, url, reply));
                 });
@@ -199,7 +201,7 @@
                 _racks.request({
                     method: 'GET',
                     url: url + '/' + uuid
-                }, function (reply) { 
+                }, function (reply) {
                     reply = interpretAPIResponse(reply);
                     callback(_racks.model(product, resourceName, url, reply));
                 });
@@ -247,6 +249,7 @@
             RacksJS.prototype._racks = _racks;
             // for each product in the service catalog
             this.authAccess.serviceCatalog.forEach(function (rawProduct) {
+                var resourceName;
                 // if we have a matching product defintion
                 if (_racks.products[rawProduct.name] !== undefined) {
                     _racks[rawProduct.name] = {
@@ -272,10 +275,11 @@
                     // select default region to start
                     _racks[rawProduct.name].selectEndpoint(_racks.authAccess.user['RAX-AUTH:defaultRegion']);
                     // bind the resource functions to each resource listed within the product.
-                    for (var resourceName in _racks.products[rawProduct.name]) {
-                        if (resourceName !== "target") {
-                            //console.log('binding', rawProduct.name, resourceName);
-                            _racks[rawProduct.name][resourceName] = _racks.resource(_racks[rawProduct.name], resourceName, _racks.products[rawProduct.name][resourceName]);
+                    for (resourceName in _racks.products[rawProduct.name]) {
+                        if (_racks.products[rawProduct.name].hasOwnProperty(resourceName)) {
+                            if (resourceName !== "target") {
+                                _racks[rawProduct.name][resourceName] = _racks.resource(_racks[rawProduct.name], resourceName, _racks.products[rawProduct.name][resourceName]);
+                            }
                         }
                     }
                 }
@@ -296,7 +300,7 @@
                             _racks.request({
                                 method: 'GET',
                                 url: resource.target
-                            }, function (reply){
+                            }, function (reply) {
                                 callback(reply.server);
                             });
                         };
@@ -304,16 +308,16 @@
                         .addresses('networklabel', function (serverAddresses) {})
                         .addresses(function (serverAddresses) {})
                         */
-                        resource.addresses = function () {
+                        resource.addresses = function (first, second) {
                             // Sort arguments
                             var networkLabel = false,
                                 callback,
                                 url = resource.links[0].href + '/ips';
-                            if (arguments.length == 1) {
-                                callback = arguments[0];
-                            } else if (arguments.length == 2) {
-                                networkLabel = arguments[0];
-                                callback = arguments[1];
+                            if (arguments.length === 1) {
+                                callback = first;
+                            } else if (arguments.length === 2) {
+                                networkLabel = first;
+                                callback = second;
                             } else {
                                 console.log('.addresses() No callback provided - no output from this request is possible! Skipping.');
                                 return false;
@@ -336,7 +340,7 @@
                         .delete(function (success, errorMessage) {})
                         if success == false, errorMessage is provided
                         */
-                        resource.delete = function () {
+                        resource.delete = function (callback) {
                             _racks.request({
                                 method: 'DELETE',
                                 url: resource.links[0].href
@@ -364,14 +368,14 @@
                                 "adminPass": newPassword
                             }   }, callback);
                         };
-                        resource.reboot = function () {
+                        resource.reboot = function (first, second) {
                             var type = 'SOFT',
                                 callback = function () {};
-                            if (arguments.length == 1) {
-                                callback = arguments[0];
-                            } else if (arguments.length == 2) {
-                                type = arguments[0];
-                                callback = arguments[1];
+                            if (arguments.length === 1) {
+                                callback = first;
+                            } else if (arguments.length === 2) {
+                                type = first;
+                                callback = second;
                             }
                             resource.action({ "reboot": {
                                 "type": type
@@ -475,7 +479,7 @@
                             // Todo: /loadbalancers/ ought to be prepended to our target automatically
                             // Its not, since this isn't a model level function
                             url: url + '/loadbalancers/usage'
-                        }, function (reply){
+                        }, function (reply) {
                             callback(reply);
                         });
                     }
@@ -574,7 +578,7 @@
             }
         };
         return RacksJS;
-    })();
+    }());
     // forEach Shim -
     // developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/forEach
     if (!Array.prototype.forEach) {
@@ -588,4 +592,4 @@
         };
     }
     module.exports = RacksJS;
-})();
+}());
