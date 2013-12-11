@@ -446,6 +446,14 @@
                     // service catalog is "loadBalancer", api only responds to "loadbalancer".
                     resourceString: 'loadbalancers',
                     model: function (_racks, product, resource) {
+                        resource.details = function (callback) {
+                            _racks.request({
+                                method: 'GET',
+                                url: resource.target
+                            }, function (reply) {
+                                callback(reply.loadBalancer);
+                            });
+                        };
                         resource.listNodes = function (callback) {
                             _racks.request({
                                 method: 'GET',
