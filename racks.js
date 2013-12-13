@@ -423,8 +423,24 @@
                             resource.action({ "createImage": imageRequestObj }, callback);
                         };
                         //http://docs.rackspace.com/servers/api/v2/cs-devguide/content/MetadataSection.html
-                        resource.metadata = function () {
-
+                        resource.metadata = function (callback) {
+                            _racks.request({
+                                method: 'GET',
+                                url: resource.target + '/metadata'
+                            }, function (reply) {
+                                callback(reply);
+                            });
+                        };
+                        resource.updateMetadata = function (metadata, callback) {
+                            _racks.request({
+                                method: 'POST',
+                                url: resource.target + '/metadata',
+                                data: {
+                                    "metadata": metadata
+                                }
+                            }, function (reply) {
+                                callback(reply);
+                            });
                         };
                         return resource;
                     }

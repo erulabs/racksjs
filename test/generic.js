@@ -5,13 +5,26 @@ new RacksJS({
     // Username and APIKEY for rackspace
     username: process.argv[2],
     apiKey: process.argv[3],
-    verbosity: 5
+    verbosity: 1
 }, function (rack) {
     if (rack.error) {
         console.log(rack.error);
         return false;
     }
-
+    // Update metadata on some server
+    /*rack.cloudServersOpenStack.servers.all(function (servers) {
+        //console.log(servers);
+        servers.forEach(function (server) {
+            if (server.name === 'some name') {
+                // Update the automation level to force a system to be marked complete
+                server.updateMetadata({
+                    'rax_service_level_automation': 'Complete'
+                }, function (reply) {
+                    console.log(server.name, reply);
+                });
+            }
+        });
+    });*/
     // Creating a new server
     /*rack.cloudServersOpenStack.servers.new({
         // Gentoo 13.3
@@ -88,14 +101,14 @@ new RacksJS({
         });
     });*/
     /* An example of grabbing all the details for all your next-gen servers */
-    rack.cloudServersOpenStack.servers.all(function (servers) {
-        //console.log(servers);
-        servers.forEach(function (server) {
-            server.details(function (details) {
-                console.log(details.addresses);
-            });
-        });
-    });
+    //rack.cloudServersOpenStack.servers.all(function (servers) {
+    //    //console.log(servers);
+    //    servers.forEach(function (server) {
+    //        server.details(function (details) {
+    //            console.log(details.addresses);
+    //        });
+    //    });
+    //});
     /* Resource's .find(UUID)
     rack.cloudServersOpenStack.servers.find('35768af2-0229-4e1f-879b-d9abf10ff245', function(myServer) {
         console.log(myServer);
