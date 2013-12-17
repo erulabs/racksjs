@@ -124,56 +124,77 @@
     // Interpert the serviceCatalog returned by .authenticate(). Wrap .all(), .where(), etc.
     RacksJS.prototype.buildCatalog = function (serviceCatalog) {
         var rack = this;
-        rack.products = {
-            cloudServersOpenStack: {
-                servers: {
-                    model: function (catalog) {
-                        catalog.details = function (cb) {
-                            rack.get(catalog.target, cb);
-                        };
-                        return catalog;
-                    }
+        rack.cloudServersOpenStack = {
+            servers: {
+                model: function (catalog) {
+                    catalog.details = function (cb) {
+                        rack.get(catalog.target, cb);
+                    };
+                    return catalog;
+                }
+            }
+        };
+        rack.cloudLoadBalancers = {
+            loadBalancers: {
+                meta: {
+                    resourceString: 'loadbalancers',
+                },
+                model: function (catalog) {
+                    return catalog;
                 }
             }
         };
         serviceCatalog.forEach(function (product) {
             var resourceName;
-            if (rack.products[product.name] !== undefined) {
-                rack.products[product.name].endpoints = product.endpoints;
-                rack.products[product.name].target = function () {
-                    var dc = (rack.datacenter === undefined) ? rack.user['RAX-AUTH:defaultRegion'] : rack.datacenter,
-                        target;
-                    if (rack.products[product.name].endpoints.length > 1) {
-                        rack.products[product.name].endpoints.forEach(function (endpoint) {
-                            if (endpoint.region === dc) {
-                                target = endpoint.publicURL;
-                            }
-                        });
-                    } else {
-                        // First gen servers which do not have a normal endpoint catalog
-                        target = rack.products[product.name].endpoints[0];
+            if (rack[product.name] !== undefined) {
+                rack[product.name].meta = {
+                    endpoints: product.endpoints,
+                    target: function () {
+                        var dc = (rack.datacenter === undefined) ? rack.user['RAX-AUTH:defaultRegion'] : rack.datacenter,
+                            target;
+                        if (this.endpoints.length > 1) {
+                            this.endpoints.forEach(function (endpoint) {
+                                if (endpoint.region === dc) {
+                                    target = endpoint.publicURL;
+                                }
+                            });
+                        } else {
+                            // First gen servers which do not have a normal endpoint catalog
+                            target = this.endpoints[0];
+                        }
+                        return target;
                     }
-                    return target;
                 };
-                for (resourceName in rack.products[product.name]) {
-                    if (rack.products[product.name].hasOwnProperty(resourceName)) {
-                        if (resourceName !== 'target' && resourceName !== 'endpoints') {
-                            console.log('binding functionality for', resourceName);
-                            rack.products[product.name][resourceName].resource = resourceName;
-                            rack.products[product.name][resourceName].product = product.name;
-
-                            rack.products[product.name][resourceName].target = function (resourceName) {
-                                return rack.products[product.name].target() + '/' + this.resource;
+                for (resourceName in rack[product.name]) {
+                    if (rack[product.name].hasOwnProperty(resourceName)) {
+                        // the "meta" property of any given product is not a resource and should be ignored
+                        if (resourceName !== 'meta') {
+                            // Bind references to the product and resource 
+                            if (rack[product.name][resourceName].meta === undefined) {
+                                rack[product.name][resourceName].meta = {};
+                            }
+                            rack[product.name][resourceName].meta.name = resourceName;
+                            rack[product.name][resourceName].meta.product = product.name;
+                            // Call our parent products .target() function and append our resource name
+                            rack[product.name][resourceName].meta.target = function () {
+                                var resourcePath = (this.resourceString === undefined) ? this.name : this.resourceString;
+                                return rack[this.product].meta.target() + '/' + resourcePath;
                             };
-                            rack.products[product.name][resourceName].all = function (cb) {
-                                rack.get(this.target(resourceName), function (reply) {
-                                    cb(reply);
+                            // Get all resources, bind reply into resources.model() (if there is one), and callback
+                            rack[product.name][resourceName].all = function (cb) {
+                                var resource = this;
+                                rack.get(this.meta.target(), function (reply) {
+                                    if (reply[resource.meta.name] !== undefined) {
+                                        cb(reply[resource.meta.name]);
+                                    } else {
+                                        console.log('product wrapping failure -', resource.meta.name, 'raw reply:', reply);
+                                    }
                                 });
                             };
-                            //racks.products[product.name][resourceName].where = function () {
+                            //racks[product.name][resourceName].where = function () {
                             //
                             //};
-                            //racks.products[product.name][resourceName].find = function () {
+                            //racks[product.name][resourceName].find = function () {
                             //
                             //};
                         }
