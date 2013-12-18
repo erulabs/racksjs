@@ -1,3 +1,4 @@
+/*jshint loopfunc: true*/
 // Racks.js - a javascript SDK for the Rackspace Cloud - https://github.com/erulabs/racksjs
 (function () {
     "use strict";
@@ -86,6 +87,21 @@
             url: url
         }, cb);
     };
+    // Shortcut for HTTP POST
+    RacksJS.prototype.post = function (url, data, cb) {
+        this.https({
+            method: 'POST',
+            url: url,
+            data: data
+        }, cb);
+    };
+    // Shortcut for HTTP DELETE
+    RacksJS.prototype.delete = function (url, cb) {
+        this.https({
+            method: 'DELETE',
+            url: url
+        }, cb);
+    };
     // Rackspace API Authentication
     RacksJS.prototype.authenticate = function (authObject, cb) {
         var rack = this;
@@ -128,9 +144,33 @@
             servers: {
                 model: function (catalog) {
                     catalog.details = function (cb) {
-                        rack.get(catalog.target, cb);
+                        rack.get(this.meta.target(), cb);
+                    };
+                    catalog.addresses = function (cb) {
+                        rack.get(this.meta.target() + '/ips', cb);
+                    };
+                    catalog.delete = function (cb) {
+                        rack.delete(this.meta.target(), cb);
+                    };
+                    catalog.action = function (obj, cb) {
+                        rack.post(this.meta.target() + '/action', obj, cb);
+                    };
+                    catalog.reboot = function (type, cb) {
+                        if (typeof type === 'function') {
+                            cb = type,
+                            type = 'SOFT';
+                        }
+                        if (type !== 'SOFT' && type !== 'HARD') {
+                            type = 'SOFT';
+                        }
+                        catalog.action({ reboot: {
+                            type: type
+                        }}, cb);
                     };
                     return catalog;
+                },
+                new: function () {
+
                 }
             }
         };
@@ -140,12 +180,56 @@
                     resourceString: 'loadbalancers',
                 },
                 model: function (catalog) {
+                    catalog.details = function (cb) {
+                        rack.get(catalog.target(), cb);
+                    };
                     return catalog;
+                },
+                new: function () {
+
                 }
             }
         };
+        rack.cloudFilesCDN = {
+            
+        };
+        rack.cloudFiles = {
+            
+        };
+        rack.autoscale = {
+            
+        };
+        rack.cloudBlockStorage = {
+            
+        };
+        rack.cloudDatabases = {
+            
+        };
+        rack.cloudOrchestration = {
+            
+        };
+        rack.cloudQueues = {
+            
+        };
+        rack.cloudBackup = {
+            
+        };
+        rack.cloudImages = {
+            
+        };
+        rack.cloudServers = {
+            
+        };
+        rack.cloudDNS = {
+            
+        };
+        rack.cloudMonitoring = {
+            
+        };
+        rack.products = {};
         serviceCatalog.forEach(function (product) {
             var resourceName;
+            // If we have a matching product
             if (rack[product.name] !== undefined) {
                 rack[product.name].meta = {
                     endpoints: product.endpoints,
@@ -165,11 +249,13 @@
                         return target;
                     }
                 };
+                rack.products[product.name] = {};
                 for (resourceName in rack[product.name]) {
                     if (rack[product.name].hasOwnProperty(resourceName)) {
                         // the "meta" property of any given product is not a resource and should be ignored
                         if (resourceName !== 'meta') {
-                            // Bind references to the product and resource 
+                            rack.products[product.name][resourceName] = rack[product.name][resourceName];
+                            // Build this products .meta()
                             if (rack[product.name][resourceName].meta === undefined) {
                                 rack[product.name][resourceName].meta = {};
                             }
@@ -185,7 +271,20 @@
                                 var resource = this;
                                 rack.get(this.meta.target(), function (reply) {
                                     if (reply[resource.meta.name] !== undefined) {
-                                        cb(reply[resource.meta.name]);
+                                        if (resource.model === undefined) {
+                                            cb(reply[resource.meta.name]);
+                                        } else {
+                                            var response = [];
+                                            reply[resource.meta.name].forEach(function (raw) {
+                                                var model = resource.model(raw);
+                                                model.meta = {};
+                                                model.meta.target = function () {
+                                                    return resource.meta.target() + '/' + raw.id;
+                                                };
+                                                response.push(model);
+                                            });
+                                            cb(response);
+                                        }
                                     } else {
                                         console.log('product wrapping failure -', resource.meta.name, 'raw reply:', reply);
                                     }
@@ -200,7 +299,9 @@
                         }
                     }
                 }
-            };
+            } else {
+                rack.log('no product named "' + product.name + '" found in racksjs - please contact the maintainers');
+            }
         });
     };
     module.exports = RacksJS;
