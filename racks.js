@@ -122,7 +122,7 @@
                 rack.error = 'Auth failed';
             } else {
                 rack.authToken = response.access.token.id;
-                rack.user = response.access.user;
+                rack.access = response.access;
                 rack.error = false;
                 rack.buildCatalog(response.access.serviceCatalog);
             }
@@ -246,7 +246,7 @@
                 rack[product.name].meta = {
                     endpoints: product.endpoints,
                     target: function () {
-                        var dc = (rack.datacenter === undefined) ? rack.user['RAX-AUTH:defaultRegion'] : rack.datacenter,
+                        var dc = (rack.datacenter === undefined) ? rack.access.user['RAX-AUTH:defaultRegion'] : rack.datacenter,
                             target;
                         if (this.endpoints.length > 1) {
                             this.endpoints.forEach(function (endpoint) {

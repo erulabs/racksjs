@@ -5,38 +5,52 @@ new RacksJS({
     // Username and APIKEY for rackspace
     username: process.argv[2],
     apiKey: process.argv[3],
-    verbosity: 5
+    verbosity: 0
 }, function (rack) {
 	if (rack.error) {
 		return console.log(rack.error);
 	}
+	//rack.servers.all(function (servers) {
+	//	servers[1].details(function (reply) {
+	//		console.log(reply);
+	//	});
+	//});
+	//rack.post('https://identity.api.rackspacecloud.com/v2.0/tokens', {
+	//	auth: {
+	//		"tenantId": "808571",
+	//		"token": {
+	//			id: rack.authToken
+	//		}
+	//	}
+	//}, function (reply) {
+	//	console.log(reply);
+	//});
 	//rack.serviceCatalog.forEach(function (catalog) {
 	//	if (catalog.name === 'cloudOrchestration') {
 	//		console.log(catalog.endpoints);
 	//	}
 	//});
-	rack.clbs.all(function (servers) {
-		console.log(servers);
-		servers.forEach(function (server) {
-			//server.updateMetadata({
-			//	'rax_service_level_automation': 'Complete'
-			//}, function (reply) {
-			//	console.log(reply);
-			//});
-			//server.listMetadata(function (details) {
-			//	console.log(details);
-			//});
-			//server.reboot(function (reply) {
-			//	console.log(reply);
-			//});
-			//server.details(function (reply) {
-			//	console.log(reply);
-			//})
-			//server.addresses(function (reply) {
-			//	console.log(reply.addresses);
-			//});
-		});
-	});
+	//rack.clbs.all(function (servers) {
+	//	servers.forEach(function (server) {
+	//		server.updateMetadata({
+	//			'rax_service_level_automation': 'Complete'
+	//		}, function (reply) {
+	//			console.log(reply);
+	//		});
+	//		server.listMetadata(function (details) {
+	//			console.log(details);
+	//		});
+	//		server.reboot(function (reply) {
+	//			console.log(reply);
+	//		});
+	//		server.details(function (reply) {
+	//			console.log(reply);
+	//		})
+	//		server.addresses(function (reply) {
+	//			console.log(reply.addresses);
+	//		});
+	//	});
+	//});
 	// New feature!!! Interact with _all_ products
 	//for (productName in rack.products) {
 	//	for (resourceName in rack.products[productName]) {
