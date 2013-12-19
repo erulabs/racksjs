@@ -261,7 +261,10 @@
         rack.serviceCatalog = serviceCatalog;
         function buildModel(resourceTemplate, rawResource) {
             var model = resourceTemplate.model(rawResource);
-            model.meta = {};
+            model.meta = {
+                resource: resourceTemplate.meta.name,
+                product: resourceTemplate.meta.product
+            };
             model.meta.target = function () {
                 var target = resourceTemplate.meta.target();
                 if (target.substr(-1) === '/') {
