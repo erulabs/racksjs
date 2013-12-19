@@ -10,6 +10,18 @@ new RacksJS({
 	if (rack.error) {
 		return console.log(rack.error);
 	}
+	//rack.servers.all(function (containers) {
+	//	containers.forEach(function (container) {
+	//		console.log(container);
+	//	});
+	//});
+	rack.cf.all(function (containers) {
+		containers.forEach(function (container) {
+			container.listObjects(function (objects) {
+				console.log(objects);
+			});
+		});
+	});
 	//rack.servers.all(function (servers) {
 	//	servers[1].details(function (reply) {
 	//		console.log(reply);

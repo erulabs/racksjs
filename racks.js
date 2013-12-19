@@ -30,6 +30,7 @@
     // Handle HTTP requests. Generally same syntax as node's https.request
     // with a handful of helpful added defaults, such as JSON preference, parsing chunked replies, passing authToken, etc.
     RacksJS.prototype.https = function (opts, cb) {
+        var plaintext = opts.plaintext;
         // Set headers and defaults
         opts.headers = (opts.headers === undefined) ? {} : opts.headers;
         if (this.authToken) {
@@ -44,6 +45,7 @@
         opts.host = opts.url.host;
         opts.path = opts.url.path;
         delete opts.url;
+        delete opts.plaintext;
         if (this.verbosity > 3) {
             this.log('HTTP Request: ', opts);
         }
@@ -59,16 +61,19 @@
                 });
                 response.on('end', function () {
                     // If JSON parsing fails, just pass back the raw reply.
-                    try {
-                        reply = JSON.parse(rawReply);
-                    } catch (e) {
-                        reply = rawReply;
-                    } finally {
-                        if (rack.verbosity > 4) {
-                            rack.log('HTTP Reply:', reply);
+                    if (plaintext === undefined) {
+                        try {
+                            reply = JSON.parse(rawReply);
+                        } catch (e) {
+                            reply = rawReply;
                         }
-                        cb(reply);
+                    } else {
+                        reply = rawReply.substr(0, rawReply.length-1).split("\n");
                     }
+                    if (rack.verbosity > 4) {
+                        rack.log('HTTP Reply:', reply);
+                    }
+                    cb(reply);
                 });
                 response.on('error', function (error) {
                     rack.log(error, opts);
@@ -128,13 +133,6 @@
             }
             cb(rack);
         });
-    };
-    // Interpret API response for group level functions - correlates the response to the appropriate product.
-    //   if a product is found, attach functionality - if a product.model is found, call
-    //   product.model(this) -> in this way group functionality is added to the product, (servers.all())
-    //   and instance level functionality is added to the response (servers.all() -> servers.each -> server.reboot(), etc)
-    RacksJS.prototype.wrapResource = function (product, resource) {
-        var rack = this;
     };
     // RacksJS product and resource functionality library
     // Interpert the serviceCatalog returned by .authenticate(). Wrap .all(), .where(), etc.
@@ -205,8 +203,30 @@
             
         };
         rack.cloudFiles = {
-            
+            containers: {
+                meta: {
+                    resourceString: '',
+                    plaintext: true,
+                },
+                model: function (containerName) {
+                    var catalog = {
+                        id: containerName
+                    };
+                    catalog.listObjects = function (cb) {
+                        rack.https({
+                            method: 'GET',
+                            plaintext: true,
+                            url: this.meta.target()
+                        }, cb);
+                    };
+                    return catalog;
+                },
+                new: function () {
+
+                }
+            }
         };
+        rack.cf = rack.cloudFiles.containers;
         rack.autoscale = {
             
         };
@@ -239,6 +259,18 @@
         };
         rack.products = {};
         rack.serviceCatalog = serviceCatalog;
+        function buildModel(resourceTemplate, rawResource) {
+            var model = resourceTemplate.model(rawResource);
+            model.meta = {};
+            model.meta.target = function () {
+                var target = resourceTemplate.meta.target();
+                if (target.substr(-1) === '/') {
+                    target = target.substr(0, target.length-1);
+                }
+                return target + '/' + model.id;
+            };
+            return model;
+        }
         serviceCatalog.forEach(function (product) {
             var resourceName;
             // If we have a matching product
@@ -258,6 +290,9 @@
                             // First gen servers which do not have a normal endpoint catalog
                             target = this.endpoints[0];
                         }
+                        if (target.substr(-1) !== '/') {
+                            target = target + '/';
+                        }
                         return target;
                     }
                 };
@@ -276,29 +311,39 @@
                             // Call our parent products .target() function and append our resource name
                             rack[product.name][resourceName].meta.target = function () {
                                 var resourcePath = (this.resourceString === undefined) ? this.name : this.resourceString;
-                                return rack[this.product].meta.target() + '/' + resourcePath;
+                                return rack[this.product].meta.target() + resourcePath;
                             };
                             // Get all resources, bind reply into resources.model() (if there is one), and callback
                             rack[product.name][resourceName].all = function (cb) {
                                 var resource = this;
-                                rack.get(this.meta.target(), function (reply) {
+                                rack.https({
+                                    plaintext: resource.meta.plaintext,
+                                    method: 'GET',
+                                    url: this.meta.target()
+                                }, function (reply) {
+                                    var response = [];
                                     if (reply[resource.meta.name] !== undefined) {
                                         if (resource.model === undefined) {
                                             cb(reply[resource.meta.name]);
                                         } else {
-                                            var response = [];
                                             reply[resource.meta.name].forEach(function (raw) {
-                                                var model = resource.model(raw);
-                                                model.meta = {};
-                                                model.meta.target = function () {
-                                                    return resource.meta.target() + '/' + raw.id;
-                                                };
-                                                response.push(model);
+                                                response.push(buildModel(resource, raw));
                                             });
                                             cb(response);
                                         }
                                     } else {
-                                        console.log('product wrapping failure -', resource.meta.name, 'raw reply:', reply);
+                                        if (resource.meta.plaintext !== undefined) {
+                                            // If we're expecting a plaintext reply, as is the case with cloudFiles,
+                                            // then strip the trailing newline (substr), and split into an array, then return
+                                            //cb(reply.substr(0, reply.length-1).split("\n"));
+                                            // This is now down in .https()
+                                            reply.forEach(function (raw) {
+                                                response.push(buildModel(resource, raw));
+                                            });
+                                            cb(response);
+                                        } else {
+                                            console.log('product wrapping failure -', resource.meta.name, 'raw reply:', reply);
+                                        }
                                     }
                                 });
                             };
