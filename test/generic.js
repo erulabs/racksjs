@@ -10,6 +10,12 @@ new RacksJS({
 	if (rack.error) {
 		return console.log(rack.error);
 	}
+	rack.cloudMonitoring.overview(function (reply) {
+
+	});
+	//rack.autoscale.groups.all(function (volumes) {
+	//	console.log(volumes);
+	//});
 	//rack.cloudServersOpenStack.networks.all(function (networks) {
 	//	networks.forEach(function (network) {
 	//		network.show(function (reply) {
@@ -29,11 +35,11 @@ new RacksJS({
 	//		});
 	//	});
 	//});
-	rack.servers.all(function (servers) {
-		servers[1].vips(function (reply) {
-			console.log(reply);
-		});
-	});
+	//rack.servers.all(function (servers) {
+	//	servers[1].vips(function (reply) {
+	//		console.log(reply);
+	//	});
+	//});
 	//rack.post('https://identity.api.rackspacecloud.com/v2.0/tokens', {
 	//	auth: {
 	//		"tenantId": "808571",

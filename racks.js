@@ -118,6 +118,13 @@
             url: url
         }, cb);
     };
+    // Shortcut for HTTP PUT
+    RacksJS.prototype.put = function (url, cb) {
+        this.https({
+            method: 'PUT',
+            url: url
+        }, cb);
+    };
     // Rackspace API Authentication
     RacksJS.prototype.authenticate = function (authObject, cb) {
         var rack = this;
@@ -272,13 +279,83 @@
         };
         rack.cf = rack.cloudFiles.containers;
         rack.autoscale = {
-            
+            groups: {
+                model: function (catalog) {
+                    catalog.getPolicies = function (cb) {
+                        rack.get(this.meta.target() + '/policies', cb);
+                    };
+                    catalog.getConfigurations = function (cb) {
+                        rack.get(this.meta.target() + '/config', cb);
+                    };
+                    return catalog;
+                }
+            }
         };
         rack.cloudBlockStorage = {
-            
+            volumes: {
+                model: function (catalog) {
+                    catalog.show = function (cb) {
+                        rack.get(this.meta.target(), cb);
+                    };
+                    catalog.rename = function (opts, cb) {
+                        var queryString = '';
+                        if (opts.name !== undefined) {
+                            queryString = 'display_name=' + opts.name + '&';
+                        }
+                        if (opts.description !== undefined) {
+                            queryString = 'display_description=' + opts.description;
+                        }
+                        if (queryString === '') {
+                            rack.log('Pass either opts.name or opts.description');
+                        } else {
+                            rack.put(this.meta.target() + queryString, cb);
+                        }
+                    };
+                    return catalog;
+                }
+            },
+            types: {
+                model: function (catalog) {
+                    catalog.describe = function (cb) {
+                        rack.get(this.meta.target(), cb);
+                    };
+                    return catalog;
+                }
+            }
         };
+        rack.cbs = rack.cloudBlockStorage.volumes;
         rack.cloudDatabases = {
-            
+            instances: {
+                model: function (catalog) {
+                    catalog.details = function (cb) {
+                        rack.get(this.meta.target(), cb);
+                    };
+                    catalog.action = function (obj, cb) {
+                        rack.post(this.meta.target() + '/action', obj, cb);
+                    };
+                    catalog.restart = function (cb) {
+                        catalog.action({ restart: {} }, cb);
+                    };
+                    catalog.resize = function (flavorRef, cb) {
+                        catalog.action({ resize: {
+                            "flavorRef": flavorRef
+                        }}, cb);
+                    };
+                    catalog.listDatabases = function (cb) {
+                        rack.get(this.meta.target() + '/databases', cb);
+                    };
+                    catalog.listUsers = function (cb) {
+                        rack.get(this.meta.target() + '/users', cb);
+                    };
+                    catalog.listFlavors = function (cb) {
+                        rack.get(this.meta.target() + '/flavors', cb);
+                    };
+                    catalog.listBackups = function (cb) {
+                        rack.get(this.meta.target() + '/backups', cb);
+                    };
+                    return catalog;
+                }
+            }
         };
         rack.cloudOrchestration = {
             
@@ -299,7 +376,62 @@
             
         };
         rack.cloudMonitoring = {
-            
+            entities: {
+                model: function (catalog) {
+                    catalog.listChecks = function (cb) {
+                        rack.get(this.meta.target() + '/checks', cb);
+                    };
+                    catalog.listAlarms = function (cb) {
+                        rack.get(this.meta.target() + '/alarms', cb);
+                    };
+                    return catalog;
+                }
+            },
+            account: {
+            },
+            limits: {
+            },
+            audits: {
+
+            },
+            checkTypes: {
+                meta: {
+                    resourceString: 'check_types'
+                },
+                model: function (catalog) {
+                    catalog.details = function (cb) {
+                        rack.get(this.meta.target(), cb);
+                    };
+                    return catalog;
+                }
+            },
+            monitoringZones: {
+                meta: {
+                    resourceString: 'monitoring_zones'
+                },
+                model: function (catalog) {
+                    catalog.details = function (cb) {
+                        rack.get(this.meta.target(), cb);
+                    };
+                    return catalog;
+                }
+            },
+            notifications: {
+                model: function (catalog) {
+                    catalog.details = function (cb) {
+                        rack.get(this.meta.target(), cb);
+                    };
+                    return catalog;
+                }
+            },
+            agents: {
+
+            },
+            //http://docs.rackspace.com/cm/api/v1.0/cm-devguide/content/service-views.html
+            overview: function (cb) {
+                //console.log(this.meta.target());
+                rack.get(this.meta.target() + 'views/overview', cb);
+            }
         };
         rack.products = {};
         rack.serviceCatalog = serviceCatalog;
@@ -336,6 +468,9 @@
                         } else {
                             // First gen servers which do not have a normal endpoint catalog
                             target = this.endpoints[0];
+                        }
+                        if (typeof target === "object") {
+                            target = target.publicURL;
                         }
                         if (target.substr(-1) !== '/') {
                             target = target + '/';
