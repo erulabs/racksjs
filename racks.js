@@ -366,7 +366,7 @@
                     catalog.listMessages = function (cb) {
                         rack.get(this.meta.target() + '/claims', cb);
                     };
-                 return catalog;   
+                    return catalog;   
                 }
             }
         };
