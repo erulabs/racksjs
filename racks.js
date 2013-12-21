@@ -361,7 +361,14 @@
             
         };
         rack.cloudQueues = {
-            
+            queues: {
+                model:  function(catalog) {
+                    catalog.listMessages = function (cb) {
+                        rack.get(this.meta.target() + '/claims', cb);
+                    };
+                 return catalog;   
+                }
+            }
         };
         rack.cloudBackup = {
             
