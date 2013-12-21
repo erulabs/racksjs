@@ -22,8 +22,13 @@
     // Logger to handle verbosity settings
     RacksJS.prototype.log = function (message, verbose) {
         if (this.verbosity === 1) {
-            console.log(message);
+            if (message !== undefined) {
+                console.log(message);
+            }
         } else if (this.verbosity > 1) {
+            if (message === undefined) {
+                message = '[DEBUG] ';
+            }
             console.log(message, verbose);
         }
     };
@@ -145,6 +150,34 @@
     RacksJS.prototype.buildCatalog = function (serviceCatalog) {
         var rack = this;
         rack.cloudServersOpenStack = {
+            networks: {
+                meta: {
+                    resourceString: 'os-networksv2'
+                },
+                model: function (catalog) {
+                    catalog.show = function (cb) {
+                        // Public and private networks do not reply to show() - they 404.
+                        // however, the onlything .show() really does is give you a CIDR - therefore,
+                        // instead of 404ing weirdly, we'll just reply back instantly without a CIDR
+                        // since we have all other data anyways...
+                        // Because this is odd, we'll log a message for development mode only
+                        rack.log(undefined, 'You cannot run .show() on the default public and private networks!');
+                        rack.log(undefined, 'instead, RacksJS has returned a fake object that is everything .show()');
+                        rack.log(undefined, 'is, save the CIDR - so you might want to check for reply.cidr === undefined');
+                        if (catalog.label === 'public' || catalog.label === 'private') {
+                            cb({
+                                network: {
+                                    id: catalog.id,
+                                    label: catalog.label
+                                }
+                            });
+                        } else {
+                            rack.get(this.meta.target(), cb);
+                        }
+                    };
+                    return catalog;
+                }
+            },
             servers: {
                 model: function (catalog) {
                     catalog.details = function (cb) {
@@ -179,6 +212,10 @@
                     catalog.listMetadata = function (cb) {
                         rack.get(this.meta.target() + '/metadata', cb);
                     };
+                    catalog.listVirtualInterfaces = function (cb) {
+                        rack.get(this.meta.target() + '/os-virtual-interfacesv2', cb);
+                    };
+                    catalog.vips = catalog.listVirtualInterfaces;
                     return catalog;
                 },
                 new: function () {
@@ -216,6 +253,7 @@
                 },
                 model: function (containerName) {
                     var catalog = {
+                        // Todo: this should be added to buildModel() -> product.resource.model() should ONLY return functions
                         id: containerName
                     };
                     catalog.listObjects = function (cb) {
@@ -351,7 +389,7 @@
                                             });
                                             cb(response);
                                         } else {
-                                            console.log('product wrapping failure -', resource.meta.name, 'raw reply:', reply);
+                                            rack.log('product wrapping failure -', resource.meta.name, 'raw reply:', reply);
                                         }
                                     }
                                 });

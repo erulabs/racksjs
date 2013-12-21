@@ -5,16 +5,23 @@ new RacksJS({
     // Username and APIKEY for rackspace
     username: process.argv[2],
     apiKey: process.argv[3],
-    verbosity: 0
+    verbosity: 5
 }, function (rack) {
 	if (rack.error) {
 		return console.log(rack.error);
 	}
-	rack.servers.all(function (containers) {
-		containers.forEach(function (container) {
-			console.log(container);
-		});
-	});
+	//rack.cloudServersOpenStack.networks.all(function (networks) {
+	//	networks.forEach(function (network) {
+	//		network.show(function (reply) {
+	//			console.log(reply);
+	//		});
+	//	});
+	//});
+	//rack.cf.all(function (containers) {
+	//	containers.forEach(function (container) {
+	//		console.log(container);
+	//	});
+	//});
 	//rack.cf.all(function (containers) {
 	//	containers.forEach(function (container) {
 	//		container.listObjects(function (objects) {
@@ -22,11 +29,11 @@ new RacksJS({
 	//		});
 	//	});
 	//});
-	//rack.servers.all(function (servers) {
-	//	servers[1].details(function (reply) {
-	//		console.log(reply);
-	//	});
-	//});
+	rack.servers.all(function (servers) {
+		servers[1].vips(function (reply) {
+			console.log(reply);
+		});
+	});
 	//rack.post('https://identity.api.rackspacecloud.com/v2.0/tokens', {
 	//	auth: {
 	//		"tenantId": "808571",
