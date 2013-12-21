@@ -68,7 +68,11 @@
                             reply = rawReply;
                         }
                     } else {
-                        reply = rawReply.substr(0, rawReply.length-1).split("\n");
+                        if (rawReply === "") {
+                            reply = [];
+                        } else {
+                            reply = rawReply.substr(0, rawReply.length-1).split("\n");
+                        }
                     }
                     if (rack.verbosity > 4) {
                         rack.log('HTTP Reply:', reply);
