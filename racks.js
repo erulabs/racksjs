@@ -60,15 +60,17 @@
                     rawReply = rawReply + responseChunk;
                 });
                 response.on('end', function () {
-                    // If JSON parsing fails, just pass back the raw reply.
                     if (plaintext === undefined) {
                         try {
                             reply = JSON.parse(rawReply);
                         } catch (e) {
+                            // If JSON parsing fails, just pass back the raw reply.
                             reply = rawReply;
                         }
                     } else {
-                        if (rawReply === "") {
+                        // If we're expecting plaintext, as is the case with cloudfiles, then parse
+                        // the silly plaintext response.
+                        if (rawReply.length === 0) {
                             reply = [];
                         } else {
                             reply = rawReply.substr(0, rawReply.length-1).split("\n");
