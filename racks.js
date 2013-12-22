@@ -515,7 +515,6 @@
         };
         rack.products = {};
         rack.serviceCatalog = serviceCatalog;
-
         // buildModel - wraps each item in typical API response arrays. In other words, for a list of servers, each server (which is a {}),
         // gets appended with a bunch of functionality (whatever is in its .model()), some metadata which is nice for scripting
         // and most importantly, a target function
@@ -544,6 +543,56 @@
                 return target + '/' + idOrName;
             };
             return model;
+        }
+        // Wracks each item in the product object -> things like cloudServersOpenStack.servers are resources.
+        // we add helpful wrappers, like .all, .find, etc.
+        function buildResource(productName, resourceName) {
+            // Build this products .meta()
+            if (rack[productName][resourceName].meta === undefined) {
+                rack[productName][resourceName].meta = {};
+            }
+            rack[productName][resourceName].meta.name = resourceName;
+            rack[productName][resourceName].meta.product = productName;
+            // Call our parent products .target() function and append our resource name
+            rack[productName][resourceName].meta.target = function () {
+                var resourcePath = (this.resourceString === undefined) ? this.name : this.resourceString;
+                return rack[this.product].meta.target() + resourcePath;
+            };
+            // Get all resources, bind reply into resources.model() (if there is one), and callback
+            rack[productName][resourceName].all = function (cb) {
+                var resource = this;
+                rack.https({
+                    plaintext: resource.meta.plaintext,
+                    method: 'GET',
+                    url: this.meta.target()
+                }, function (reply) {
+                    var response = [];
+                    if (reply[resource.meta.name] !== undefined) {
+                        if (resource.model === undefined) {
+                            cb(reply[resource.meta.name]);
+                        } else {
+                            reply[resource.meta.name].forEach(function (raw) {
+                                response.push(buildModel(resource, raw));
+                            });
+                            cb(response);
+                        }
+                    } else {
+                        if (resource.meta.plaintext !== undefined) {
+                            // If we're expecting a plaintext reply, as is the case with cloudFiles,
+                            // then strip the trailing newline (substr), and split into an array, then return
+                            //cb(reply.substr(0, reply.length-1).split("\n"));
+                            // This is now down in .https()
+                            reply.forEach(function (raw) {
+                                response.push(buildModel(resource, raw));
+                            });
+                            cb(response);
+                        } else {
+                            rack.log('product wrapping failure -', resource.meta.name, 'raw reply:', reply);
+                        }
+                    }
+                });
+            };
+            return 
         }
         serviceCatalog.forEach(function (product) {
             var resourceName;
@@ -578,58 +627,8 @@
                     if (rack[product.name].hasOwnProperty(resourceName)) {
                         // the "meta" property of any given product is not a resource and should be ignored
                         if (resourceName !== 'meta') {
+                            rack[product.name][resourceName] = buildResource(product.name, resourceName);
                             rack.products[product.name][resourceName] = rack[product.name][resourceName];
-                            // Build this products .meta()
-                            if (rack[product.name][resourceName].meta === undefined) {
-                                rack[product.name][resourceName].meta = {};
-                            }
-                            rack[product.name][resourceName].meta.name = resourceName;
-                            rack[product.name][resourceName].meta.product = product.name;
-                            // Call our parent products .target() function and append our resource name
-                            rack[product.name][resourceName].meta.target = function () {
-                                var resourcePath = (this.resourceString === undefined) ? this.name : this.resourceString;
-                                return rack[this.product].meta.target() + resourcePath;
-                            };
-                            // Get all resources, bind reply into resources.model() (if there is one), and callback
-                            rack[product.name][resourceName].all = function (cb) {
-                                var resource = this;
-                                rack.https({
-                                    plaintext: resource.meta.plaintext,
-                                    method: 'GET',
-                                    url: this.meta.target()
-                                }, function (reply) {
-                                    var response = [];
-                                    if (reply[resource.meta.name] !== undefined) {
-                                        if (resource.model === undefined) {
-                                            cb(reply[resource.meta.name]);
-                                        } else {
-                                            reply[resource.meta.name].forEach(function (raw) {
-                                                response.push(buildModel(resource, raw));
-                                            });
-                                            cb(response);
-                                        }
-                                    } else {
-                                        if (resource.meta.plaintext !== undefined) {
-                                            // If we're expecting a plaintext reply, as is the case with cloudFiles,
-                                            // then strip the trailing newline (substr), and split into an array, then return
-                                            //cb(reply.substr(0, reply.length-1).split("\n"));
-                                            // This is now down in .https()
-                                            reply.forEach(function (raw) {
-                                                response.push(buildModel(resource, raw));
-                                            });
-                                            cb(response);
-                                        } else {
-                                            rack.log('product wrapping failure -', resource.meta.name, 'raw reply:', reply);
-                                        }
-                                    }
-                                });
-                            };
-                            //racks[product.name][resourceName].where = function () {
-                            //
-                            //};
-                            //racks[product.name][resourceName].find = function () {
-                            //
-                            //};
                         }
                     }
                 }
