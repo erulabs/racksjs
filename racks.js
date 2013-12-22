@@ -61,40 +61,40 @@
             plaintext = opts.plaintext,
             request;
         delete opts.plaintext;
-            request = https.request(opts, function (response) {
-                var rawReply = '',
-                    reply = '';
-                response.setEncoding('utf8');
-                // Collect chunked reply
-                response.on('data', function (responseChunk) {
-                    rawReply = rawReply + responseChunk;
-                });
-                response.on('end', function () {
-                    if (plaintext === undefined) {
-                        try {
-                            reply = JSON.parse(rawReply);
-                        } catch (e) {
-                            // If JSON parsing fails, just pass back the raw reply.
-                            reply = rawReply;
-                        }
-                    } else {
-                        // If we're expecting plaintext, as is the case with cloudfiles, then parse
-                        // the silly plaintext response.
-                        if (rawReply.length === 0) {
-                            reply = [];
-                        } else {
-                            reply = rawReply.substr(0, rawReply.length - 1).split("\n");
-                        }
-                    }
-                    if (rack.verbosity > 4) {
-                        rack.log('HTTP Reply:', reply);
-                    }
-                    cb(reply);
-                });
-                response.on('error', function (error) {
-                    rack.log(error, opts);
-                });
+        request = https.request(opts, function (response) {
+            var rawReply = '',
+                reply = '';
+            response.setEncoding('utf8');
+            // Collect chunked reply
+            response.on('data', function (responseChunk) {
+                rawReply = rawReply + responseChunk;
             });
+            response.on('end', function () {
+                if (plaintext === undefined) {
+                    try {
+                        reply = JSON.parse(rawReply);
+                    } catch (e) {
+                        // If JSON parsing fails, just pass back the raw reply.
+                        reply = rawReply;
+                    }
+                } else {
+                    // If we're expecting plaintext, as is the case with cloudfiles, then parse
+                    // the silly plaintext response.
+                    if (rawReply.length === 0) {
+                        reply = [];
+                    } else {
+                        reply = rawReply.substr(0, rawReply.length - 1).split("\n");
+                    }
+                }
+                if (rack.verbosity > 4) {
+                    rack.log('HTTP Reply:', reply);
+                }
+                cb(reply);
+            });
+            response.on('error', function (error) {
+                rack.log(error, opts);
+            });
+        });
         // If we have any sort of data (POST), write it to the request.
         delete opts.plaintext;
         if (opts.data !== undefined) {
@@ -323,7 +323,6 @@
         };
         rack.clbs = rack.cloudLoadBalancers.loadBalancers;
         rack.cloudFilesCDN = {
-
         };
         rack.cloudFiles = {
             containers: {
@@ -333,7 +332,7 @@
                 },
                 model: function (containerName) {
                     var catalog = {
-                        // Todo: this should be added to buildModel() -> product.resource.model() should ONLY return functions
+                        // FIXME: this should be added to buildModel() -> product.resource.model() should ONLY return functions
                         meta: {
                             name: containerName
                         }
@@ -346,9 +345,6 @@
                         }, cb);
                     };
                     return catalog;
-                },
-                new: function () {
-
                 }
             }
         };
@@ -433,7 +429,6 @@
             }
         };
         rack.cloudOrchestration = {
-            
         };
         rack.cloudQueues = {
             queues: {
@@ -441,21 +436,17 @@
                     catalog.listMessages = function (cb) {
                         rack.get(this.meta.target() + '/claims', cb);
                     };
-                    return catalog;   
+                    return catalog;
                 }
             }
         };
         rack.cloudBackup = {
-            
         };
         rack.cloudImages = {
-            
         };
         rack.cloudServers = {
-            
         };
         rack.cloudDNS = {
-            
         };
         rack.cloudMonitoring = {
             entities: {
@@ -596,11 +587,11 @@
                 return resource;
             };
             rack[productName][resourceName].find = function (cb) {
-
+                console.log('unimplimented');
+                cb();
             };
             // 
             rack[productName][resourceName].assume = function (obj, cb) {
-                var resource = this;
                 if (obj.id === undefined && obj.name === undefined) {
                     rack.log('[INFO] .assume() relies on .target() which in turn requires either .id or .name on the model - please define one or the other');
                 } else {
