@@ -5,14 +5,16 @@ new RacksJS({
     // Username and APIKEY for rackspace
     username: process.argv[2],
     apiKey: process.argv[3],
-    verbosity: 5
+    verbosity: 0,
+    cache: true
 }, function (rack) {
 	if (rack.error) {
 		return console.log(rack.error);
 	}
-	rack.cloudMonitoring.overview(function (reply) {
+	//console.log(typeof rack.products.cloudMonitoring.overview);
+	//rack.cloudMonitoring.overview(function (reply) {
 
-	});
+	//});
 	//rack.autoscale.groups.all(function (volumes) {
 	//	console.log(volumes);
 	//});
@@ -26,6 +28,9 @@ new RacksJS({
 	//rack.cf.all(function (containers) {
 	//	containers.forEach(function (container) {
 	//		console.log(container);
+	//		container.listObjects(function (reply) {
+	//			console.log(reply);
+	//		});
 	//	});
 	//});
 	//rack.cf.all(function (containers) {
@@ -35,8 +40,18 @@ new RacksJS({
 	//		});
 	//	});
 	//});
+	// You can also "Assume" models to bind their functionality without making any API calls
+	// you'll need to know the 'id' or 'name' before hand.
+	rack.servers.assume({
+		id: '20b38086-c4ed-4629-a057-2d0e87e27840'
+	}, function (server) {
+		console.log(server);
+		server.details(function (reply) {
+			console.log(reply);
+		});
+	});
 	//rack.servers.all(function (servers) {
-	//	servers[1].vips(function (reply) {
+	//	servers[1].details(function (reply) {
 	//		console.log(reply);
 	//	});
 	//});

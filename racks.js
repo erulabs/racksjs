@@ -59,6 +59,8 @@
         // HTTPS request
         var rack = this,
             plaintext = opts.plaintext,
+            request;
+        delete opts.plaintext;
             request = https.request(opts, function (response) {
                 var rawReply = '',
                     reply = '';
@@ -533,10 +535,10 @@
                 if (target.substr(-1) === '/') {
                     target = target.substr(0, target.length - 1);
                 }
-                if (model.meta.id !== undefined) {
-                    idOrName = model.meta.id;
-                } else if (model.meta.name !== undefined) {
-                    idOrName = model.meta.name;
+                if (model.id !== undefined) {
+                    idOrName = model.id;
+                } else if (model.name !== undefined) {
+                    idOrName = model.name;
                 } else {
                     idOrName = '';
                 }
@@ -548,19 +550,19 @@
         // we add helpful wrappers, like .all, .find, etc.
         function buildResource(productName, resourceName) {
             // Build this products .meta()
-            if (rack[productName][resourceName].meta === undefined) {
-                rack[productName][resourceName].meta = {};
+            var resource = rack[productName][resourceName];
+            if (resource.meta === undefined) {
+                resource.meta = {};
             }
-            rack[productName][resourceName].meta.name = resourceName;
-            rack[productName][resourceName].meta.product = productName;
+            resource.meta.name = resourceName;
+            resource.meta.product = productName;
             // Call our parent products .target() function and append our resource name
-            rack[productName][resourceName].meta.target = function () {
-                var resourcePath = (this.resourceString === undefined) ? this.name : this.resourceString;
-                return rack[this.product].meta.target() + resourcePath;
+            resource.meta.target = function () {
+                var resourcePath = (resource.meta.resourceString === undefined) ? this.name : resource.meta.resourceString;
+                return rack[productName].meta.target() + resourcePath;
             };
             // Get all resources, bind reply into resources.model() (if there is one), and callback
-            rack[productName][resourceName].all = function (cb) {
-                var resource = this;
+            resource.all = function (cb) {
                 rack.https({
                     plaintext: resource.meta.plaintext,
                     method: 'GET',
@@ -591,6 +593,19 @@
                         }
                     }
                 });
+                return resource;
+            };
+            rack[productName][resourceName].find = function (cb) {
+
+            };
+            // 
+            rack[productName][resourceName].assume = function (obj, cb) {
+                var resource = this;
+                if (obj.id === undefined && obj.name === undefined) {
+                    rack.log('[INFO] .assume() relies on .target() which in turn requires either .id or .name on the model - please define one or the other');
+                } else {
+                    cb(buildModel(resource, obj));
+                }
             };
         }
         serviceCatalog.forEach(function (product) {
@@ -626,7 +641,8 @@
                     if (rack[product.name].hasOwnProperty(resourceName)) {
                         // the "meta" property of any given product is not a resource and should be ignored
                         if (resourceName !== 'meta') {
-                            buildResource(product.name, resourceName);
+                            rack[product.name][resourceName] = buildResource(product.name, resourceName);
+                            // alias it in .products
                             rack.products[product.name][resourceName] = rack[product.name][resourceName];
                         }
                     }
