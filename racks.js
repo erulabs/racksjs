@@ -4,7 +4,8 @@
     "use strict";
     // Import NodeJS standard libs for HTTPS and URL parsing
     var https = require('https'),
-        url = require('url');
+        url = require('url'),
+        fs = require('fs');
     function RacksJS(authObject, cb) {
         // Pass empty auth object through, so that using poor syntax still throws an auth error reply
         this.authObject = (authObject === undefined) ? {} : authObject;
@@ -14,6 +15,9 @@
         this.authObject.endpoint = (this.authObject.endpoint === undefined) ? 'https://identity.api.rackspacecloud.com/v2.0' : this.authObject.endpoint;
         // We will store the authToken here when authenticated. 'false' meaning no valid auth yet.
         this.authToken = false;
+        // Cache common tasks like authentication - don't by default.
+        this.cache = (this.authObject.cache === undefined) ? false : true;
+        this.cache = (this.cache && typeof this.cache !== 'string') ? '.racksjs' : this.cache;
         // If auth info was passed into the constructor, auth right away.
         if (this.authObject.username !== undefined && this.authObject.apiKey !== undefined) {
             this.authenticate(this.authObject, cb);
@@ -125,32 +129,88 @@
             url: url
         }, cb);
     };
+    // RackJS cache
+    RacksJS.prototype.getCache = function (cb) {
+        var rack = this;
+        if (this.cacheData === undefined) {
+            fs.exists(rack.cache, function (exists) {
+                if (exists) {
+                    fs.readFile(rack.cache, function (err, cacheFile) {
+                        if (err) throw err;
+                        rack.cacheData = JSON.parse(cacheFile);
+                        cb();
+                    });
+                } else {
+                    rack.cacheData = {};
+                    cb();
+                }
+            });
+        }
+    }
+    // Rackjs saveCache
+    RacksJS.prototype.saveCache = function (cb) {
+        var rack = this;
+        var cacheJson = JSON.stringify(rack.cacheData);
+        fs.writeFile(rack.cache, cacheJson, function (err) {
+            if (err) throw err;
+            if (cb !== undefined) {
+                cb();
+            }
+        });
+    };
     // Rackspace API Authentication
     RacksJS.prototype.authenticate = function (authObject, cb) {
-        var rack = this;
+        var rack = this,
+            authAction,
+            rackReply;
+        authAction = function () {
+            rack.https({
+                method: 'POST',
+                url: authObject.endpoint + '/tokens',
+                data: { 'auth': { 'RAX-KSKEY:apiKeyCredentials': {
+                    'username': authObject.username,
+                    'apiKey': authObject.apiKey
+                } } }
+            }, function (response) {
+                if (response.access === undefined) {
+                    rack.log('Auth failed', response);
+                    rack.error = 'Auth failed';
+                } else {
+                    rack.authToken = response.access.token.id;
+                    rack.access = response.access;
+                    rack.error = false;
+                    rack.buildCatalog(response.access.serviceCatalog);
+                    if (rack.cache) {
+                        rack.cacheData[rack.authObject.username] = {
+                            access: rack.access
+                        };
+                        rack.saveCache();
+                    }
+                }
+                cb(rack);
+            });
+        };
+
         if (authObject.username === undefined || authObject.apiKey === undefined) {
             cb({ error: 'No username or apiKey provided to .authenticate()' });
             return false;
         }
-        this.https({
-            method: 'POST',
-            url: authObject.endpoint + '/tokens',
-            data: { 'auth': { 'RAX-KSKEY:apiKeyCredentials': {
-                'username': authObject.username,
-                'apiKey': authObject.apiKey
-            } } }
-        }, function (response) {
-            if (response.access === undefined) {
-                rack.log('Auth failed', response);
-                rack.error = 'Auth failed';
-            } else {
-                rack.authToken = response.access.token.id;
-                rack.access = response.access;
-                rack.error = false;
-                rack.buildCatalog(response.access.serviceCatalog);
-            }
-            cb(rack);
-        });
+        if (rack.cache) {
+            rack.getCache(function () {
+                // make this based on a timer
+                if (rack.cacheData[rack.authObject.username] === undefined) {
+                    authAction();
+                } else {
+                    rack.authToken = rack.cacheData[rack.authObject.username].access.token.id;
+                    rack.access = rack.cacheData[rack.authObject.username].access;
+                    rack.error = false;
+                    rack.buildCatalog(rack.cacheData[rack.authObject.username].access.serviceCatalog);
+                    cb(rack);
+                }
+            });
+        } else {
+            authAction();
+        }
     };
     // RacksJS product and resource functionality library
     // Interpert the serviceCatalog returned by .authenticate(). Wrap .all(), .where(), etc.
