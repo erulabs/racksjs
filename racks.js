@@ -262,7 +262,7 @@
                     var catalog = {
                         // Todo: this should be added to buildModel() -> product.resource.model() should ONLY return functions
                         meta: {
-                            id: containerName
+                            name: containerName
                         }
                     };
                     catalog.listObjects = function (cb) {
@@ -445,24 +445,28 @@
         rack.products = {};
         rack.serviceCatalog = serviceCatalog;
 
-        // buildModel - 
+        // buildModel - wraps each item in typical API response arrays. In other words, for a list of servers, each server (which is a {}),
+        // gets appended with a bunch of functionality (whatever is in its .model()), some metadata which is nice for scripting
+        // and most importantly, a target function
         function buildModel(resourceTemplate, rawResource) {
+            // Metadata
             var model = resourceTemplate.model(rawResource);
             if (model.meta === undefined) {
                 model.meta = {};
             }
             model.meta.resource = resourceTemplate.meta.name;
             model.meta.product = resourceTemplate.meta.product;
+            // meta.target() -> gets the resources target(), appends this models name or ID, and returns
             model.meta.target = function () {
                 var target = resourceTemplate.meta.target(),
                     idOrName = '';
                 if (target.substr(-1) === '/') {
                     target = target.substr(0, target.length-1);
                 }
-                if (model.id !== undefined) {
-                    idOrName = model.id;
-                } else if (module.name !== undefined) {
-                    idOrName = model.name;
+                if (model.meta.id !== undefined) {
+                    idOrName = model.meta.id;
+                } else if (model.meta.name !== undefined) {
+                    idOrName = model.meta.name;
                 } else {
                     idOrName = '';
                 }
