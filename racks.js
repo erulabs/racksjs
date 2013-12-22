@@ -261,7 +261,9 @@
                 model: function (containerName) {
                     var catalog = {
                         // Todo: this should be added to buildModel() -> product.resource.model() should ONLY return functions
-                        id: containerName
+                        meta: {
+                            id: containerName
+                        }
                     };
                     catalog.listObjects = function (cb) {
                         rack.https({
@@ -435,18 +437,29 @@
         };
         rack.products = {};
         rack.serviceCatalog = serviceCatalog;
+
+        // buildModel - 
         function buildModel(resourceTemplate, rawResource) {
             var model = resourceTemplate.model(rawResource);
-            model.meta = {
-                resource: resourceTemplate.meta.name,
-                product: resourceTemplate.meta.product
-            };
+            if (model.meta === undefined) {
+                model.meta = {};
+            }
+            model.meta.resource = resourceTemplate.meta.name;
+            model.meta.product = resourceTemplate.meta.product;
             model.meta.target = function () {
-                var target = resourceTemplate.meta.target();
+                var target = resourceTemplate.meta.target(),
+                    idOrName = '';
                 if (target.substr(-1) === '/') {
                     target = target.substr(0, target.length-1);
                 }
-                return target + '/' + model.id;
+                if (model.id !== undefined) {
+                    idOrName = model.id;
+                } else if (module.name !== undefined) {
+                    idOrName = model.name;
+                } else {
+                    idOrName = '';
+                }
+                return target + '/' + idOrName;
             };
             return model;
         }
