@@ -39,7 +39,6 @@
     // Handle HTTP requests. Generally same syntax as node's https.request
     // with a handful of helpful added defaults, such as JSON preference, parsing chunked replies, passing authToken, etc.
     RacksJS.prototype.https = function (opts, cb) {
-        var plaintext = opts.plaintext;
         // Set headers and defaults
         opts.headers = (opts.headers === undefined) ? {} : opts.headers;
         if (this.authToken) {
@@ -54,12 +53,12 @@
         opts.host = opts.url.host;
         opts.path = opts.url.path;
         delete opts.url;
-        delete opts.plaintext;
         if (this.verbosity > 3) {
             this.log('HTTP Request: ', opts);
         }
         // HTTPS request
         var rack = this,
+            plaintext = opts.plaintext,
             request = https.request(opts, function (response) {
                 var rawReply = '',
                     reply = '';
@@ -82,7 +81,7 @@
                         if (rawReply.length === 0) {
                             reply = [];
                         } else {
-                            reply = rawReply.substr(0, rawReply.length-1).split("\n");
+                            reply = rawReply.substr(0, rawReply.length - 1).split("\n");
                         }
                     }
                     if (rack.verbosity > 4) {
@@ -95,6 +94,7 @@
                 });
             });
         // If we have any sort of data (POST), write it to the request.
+        delete opts.plaintext;
         if (opts.data !== undefined) {
             request.write(opts.data);
         }
@@ -136,8 +136,12 @@
             fs.exists(rack.cache, function (exists) {
                 if (exists) {
                     fs.readFile(rack.cache, function (err, cacheFile) {
-                        if (err) throw err;
-                        rack.cacheData = JSON.parse(cacheFile);
+                        if (err) {
+                            rack.log('[INFO] getCache() error:', err);
+                            rack.cacheData = {};
+                        } else {
+                            rack.cacheData = JSON.parse(cacheFile);
+                        }
                         cb();
                     });
                 } else {
@@ -146,23 +150,25 @@
                 }
             });
         }
-    }
+    };
     // Rackjs saveCache
     RacksJS.prototype.saveCache = function (cb) {
-        var rack = this;
-        var cacheJson = JSON.stringify(rack.cacheData);
+        var rack = this,
+            cacheJson = JSON.stringify(rack.cacheData);
         fs.writeFile(rack.cache, cacheJson, function (err) {
-            if (err) throw err;
-            if (cb !== undefined) {
-                cb();
+            if (err) {
+                rack.log('[INFO] saveCache() error:', err);
+            } else {
+                if (cb !== undefined) {
+                    cb();
+                }
             }
         });
     };
     // Rackspace API Authentication
     RacksJS.prototype.authenticate = function (authObject, cb) {
         var rack = this,
-            authAction,
-            rackReply;
+            authAction;
         authAction = function () {
             rack.https({
                 method: 'POST',
@@ -204,7 +210,7 @@
                     rack.authToken = rack.cacheData[rack.authObject.username].access.token.id;
                     rack.access = rack.cacheData[rack.authObject.username].access;
 
-                    if (Date.parse(rack.access.token.expires) < (new Date().getTime()/1000)) {
+                    if (Date.parse(rack.access.token.expires) < (new Date().getTime() / 1000)) {
                         authAction();
                     } else {
                         rack.error = false;
@@ -266,7 +272,7 @@
                     };
                     catalog.reboot = function (type, cb) {
                         if (typeof type === 'function') {
-                            cb = type,
+                            cb = type;
                             type = 'SOFT';
                         }
                         if (type !== 'SOFT' && type !== 'HARD') {
@@ -291,7 +297,7 @@
                     return catalog;
                 },
                 new: function () {
-
+                    console.log('unimplimented');
                 }
             }
         };
@@ -309,13 +315,13 @@
                     return catalog;
                 },
                 new: function () {
-
+                    console.log('unimplimented');
                 }
             }
         };
         rack.clbs = rack.cloudLoadBalancers.loadBalancers;
         rack.cloudFilesCDN = {
-            
+
         };
         rack.cloudFiles = {
             containers: {
@@ -429,7 +435,7 @@
         };
         rack.cloudQueues = {
             queues: {
-                model:  function(catalog) {
+                model: function (catalog) {
                     catalog.listMessages = function (cb) {
                         rack.get(this.meta.target() + '/claims', cb);
                     };
@@ -526,7 +532,7 @@
                 var target = resourceTemplate.meta.target(),
                     idOrName = '';
                 if (target.substr(-1) === '/') {
-                    target = target.substr(0, target.length-1);
+                    target = target.substr(0, target.length - 1);
                 }
                 if (model.meta.id !== undefined) {
                     idOrName = model.meta.id;
