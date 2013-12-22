@@ -16,8 +16,10 @@
         // We will store the authToken here when authenticated. 'false' meaning no valid auth yet.
         this.authToken = false;
         // Cache common tasks like authentication - don't by default.
-        this.cache = (this.authObject.cache === undefined) ? false : true;
-        this.cache = (this.cache && typeof this.cache !== 'string') ? '.racksjs' : this.cache;
+        this.cache = (this.authObject.cache === undefined) ? false : this.authObject.cache;
+        if (this.cache) {
+            this.cache = (typeof this.cache !== 'string') ? '.racksjs' : this.cache;
+        }
         // If auth info was passed into the constructor, auth right away.
         if (this.authObject.username !== undefined && this.authObject.apiKey !== undefined) {
             this.authenticate(this.authObject, cb);
@@ -584,20 +586,20 @@
                         }
                     }
                 });
-                return resource;
             };
-            rack[productName][resourceName].find = function (cb) {
+            resource.find = function (cb) {
                 console.log('unimplimented');
                 cb();
             };
             // 
-            rack[productName][resourceName].assume = function (obj, cb) {
+            resource.assume = function (obj, cb) {
                 if (obj.id === undefined && obj.name === undefined) {
                     rack.log('[INFO] .assume() relies on .target() which in turn requires either .id or .name on the model - please define one or the other');
                 } else {
                     cb(buildModel(resource, obj));
                 }
             };
+            return resource;
         }
         serviceCatalog.forEach(function (product) {
             var resourceName;
