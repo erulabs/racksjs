@@ -592,7 +592,6 @@
                     }
                 });
             };
-            return 
         }
         serviceCatalog.forEach(function (product) {
             var resourceName;
@@ -627,7 +626,7 @@
                     if (rack[product.name].hasOwnProperty(resourceName)) {
                         // the "meta" property of any given product is not a resource and should be ignored
                         if (resourceName !== 'meta') {
-                            rack[product.name][resourceName] = buildResource(product.name, resourceName);
+                            buildResource(product.name, resourceName);
                             rack.products[product.name][resourceName] = rack[product.name][resourceName];
                         }
                     }
