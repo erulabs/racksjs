@@ -203,9 +203,14 @@
                 } else {
                     rack.authToken = rack.cacheData[rack.authObject.username].access.token.id;
                     rack.access = rack.cacheData[rack.authObject.username].access;
-                    rack.error = false;
-                    rack.buildCatalog(rack.cacheData[rack.authObject.username].access.serviceCatalog);
-                    cb(rack);
+
+                    if (Date.parse(rack.access.token.expires) < (new Date().getTime()/1000)) {
+                        authAction();
+                    } else {
+                        rack.error = false;
+                        rack.buildCatalog(rack.cacheData[rack.authObject.username].access.serviceCatalog);
+                        cb(rack);
+                    }
                 }
             });
         } else {
