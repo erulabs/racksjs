@@ -462,7 +462,8 @@
                     return catalog;
                 }
             },
-            account: {
+            account: function (cb) {
+
             },
             limits: {
             },
@@ -582,7 +583,8 @@
                             });
                             cb(response);
                         } else {
-                            rack.log('product wrapping failure -', resource.meta.name, 'raw reply:', reply);
+                            console.log('product wrapping failure - contact the developers of racksjs ->', resource.meta);
+                            cb(reply);
                         }
                     }
                 });
