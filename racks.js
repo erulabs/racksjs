@@ -487,11 +487,34 @@
             },
             domains: {
                 model: function (catalog) {
+                    var resource = this;
                     catalog.details = function (cb) {
-                        rack.get(this.meta.target(), cb);
+                        rack.get(resource.meta.target(), cb);
                     };
-                    catalog.listRecords = function (cb) {
-                        rack.get(this.meta.target() + '/records', cb);
+                    // Subresource example
+                    catalog.records = {
+                        meta: {
+                            target: function () {
+                                return resource.meta.target() + '/' + catalog.id + '/records';
+                            }
+                        },
+                        all: function (cb) {
+                            rack.get(this.meta.target(), function (reply) {
+                                cb(reply.records);
+                            });
+                        }
+                    };
+                    catalog.subdomains = {
+                        meta: {
+                            target: function () {
+                                return resource.meta.target() + '/' + catalog.id + '/subdomains';
+                            }
+                        },
+                        all: function (cb) {
+                            rack.get(this.meta.target(), function (reply) {
+                                cb(reply.domains);
+                            });
+                        }
                     };
                     return catalog;
                 }
