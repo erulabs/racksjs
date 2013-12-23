@@ -260,6 +260,22 @@
                     return catalog;
                 }
             },
+            flavors: {
+                model: function (catalog) {
+                    catalog.details = function (cb) {
+                        rack.get(this.meta.target(), cb);
+                    };
+                    return catalog;
+                }
+            },
+            images: {
+                model: function (catalog) {
+                    catalog.details = function (cb) {
+                        rack.get(this.meta.target(), cb);
+                    };
+                    return catalog;
+                }
+            },
             servers: {
                 model: function (catalog) {
                     catalog.details = function (cb) {
@@ -443,12 +459,45 @@
             }
         };
         rack.cloudBackup = {
+            configurations: {
+                meta: {
+                    noResource: true,
+                    resourceString: 'backup-configuration'
+                }
+            },
+            agents: {
+                meta: {
+                    noResource: true,
+                    resourceString: 'user/agents'
+                }
+            }
         };
         rack.cloudImages = {
         };
         rack.cloudServers = {
         };
         rack.cloudDNS = {
+            limits: {
+                model: function (catalog) {
+                    catalog.types = function (cb) {
+                        rack.get(this.meta.target() + '/types', cb);
+                    };
+                    return catalog;
+                }
+            },
+            domains: {
+                model: function (catalog) {
+                    catalog.details = function (cb) {
+                        rack.get(this.meta.target(), cb);
+                    };
+                    catalog.listRecords = function (cb) {
+                        rack.get(this.meta.target() + '/records', cb);
+                    };
+                    return catalog;
+                }
+            },
+            rdns: {
+            }
         };
         rack.cloudMonitoring = {
             entities: {
@@ -556,51 +605,53 @@
                 return rack[productName].meta.target() + resourcePath;
             };
             // Get all resources, bind reply into resources.model() (if there is one), and callback
-            resource.all = function (cb) {
-                rack.https({
-                    plaintext: resource.meta.plaintext,
-                    method: 'GET',
-                    url: this.meta.target()
-                }, function (reply) {
-                    var response = [];
-                    if (reply[resource.meta.name] !== undefined) {
-                        if (resource.model === undefined) {
-                            cb(reply[resource.meta.name]);
+            if (resource.meta.noResource === undefined) {
+                resource.all = function (cb) {
+                    rack.https({
+                        plaintext: resource.meta.plaintext,
+                        method: 'GET',
+                        url: this.meta.target()
+                    }, function (reply) {
+                        var response = [];
+                        if (reply[resource.meta.name] !== undefined) {
+                            if (resource.model === undefined) {
+                                cb(reply[resource.meta.name]);
+                            } else {
+                                reply[resource.meta.name].forEach(function (raw) {
+                                    response.push(buildModel(resource, raw));
+                                });
+                                cb(response);
+                            }
                         } else {
-                            reply[resource.meta.name].forEach(function (raw) {
-                                response.push(buildModel(resource, raw));
-                            });
-                            cb(response);
+                            if (resource.meta.plaintext !== undefined) {
+                                // If we're expecting a plaintext reply, as is the case with cloudFiles,
+                                // then strip the trailing newline (substr), and split into an array, then return
+                                //cb(reply.substr(0, reply.length-1).split("\n"));
+                                // This is now down in .https()
+                                reply.forEach(function (raw) {
+                                    response.push(buildModel(resource, raw));
+                                });
+                                cb(response);
+                            } else {
+                                console.log('product wrapping failure - contact the developers of racksjs ->', resource.meta);
+                                cb(reply);
+                            }
                         }
+                    });
+                };
+                resource.find = function (cb) {
+                    console.log('unimplimented');
+                    cb();
+                };
+                // 
+                resource.assume = function (obj, cb) {
+                    if (obj.id === undefined && obj.name === undefined) {
+                        rack.log('[INFO] .assume() relies on .target() which in turn requires either .id or .name on the model - please define one or the other');
                     } else {
-                        if (resource.meta.plaintext !== undefined) {
-                            // If we're expecting a plaintext reply, as is the case with cloudFiles,
-                            // then strip the trailing newline (substr), and split into an array, then return
-                            //cb(reply.substr(0, reply.length-1).split("\n"));
-                            // This is now down in .https()
-                            reply.forEach(function (raw) {
-                                response.push(buildModel(resource, raw));
-                            });
-                            cb(response);
-                        } else {
-                            console.log('product wrapping failure - contact the developers of racksjs ->', resource.meta);
-                            cb(reply);
-                        }
+                        cb(buildModel(resource, obj));
                     }
-                });
-            };
-            resource.find = function (cb) {
-                console.log('unimplimented');
-                cb();
-            };
-            // 
-            resource.assume = function (obj, cb) {
-                if (obj.id === undefined && obj.name === undefined) {
-                    rack.log('[INFO] .assume() relies on .target() which in turn requires either .id or .name on the model - please define one or the other');
-                } else {
-                    cb(buildModel(resource, obj));
-                }
-            };
+                };
+            }
             return resource;
         }
         serviceCatalog.forEach(function (product) {
