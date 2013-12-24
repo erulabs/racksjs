@@ -1,24 +1,56 @@
 #!/usr/bin/env node
-// Include racks.js
+// Include racks.js and start it with a few settings
 var RacksJS = require('../racks.js');
 new RacksJS({
     // Username and APIKEY for rackspace
     username: process.argv[2],
     apiKey: process.argv[3],
+    // Anything above 0 will 'console.log', 5 will print debug output
     verbosity: 5,
-    cache: false
+    // Save a cache file to avoid unneeded authentication calls
+    // cache = 'someOtherFile' works as expected - !undefined defaults to '.racksjs'
+    cache: true
 }, function (rack) {
 	if (rack.error) {
 		return console.log(rack.error);
 	}
+	var r = rack;
 
-	rack.cloudDNS.domains.all(function (domains) {
-		domains.forEach(function (domain) {
-			domain.records.all(function (records) {
-				console.log('RECORDS', records);
+	r.networks.all(function (networks) {
+		networks.forEach(function (network) {
+			network.show(function (reply) {
+				console.log(reply);
 			});
 		});
 	});
+
+	//r.cf.all(function (containers) {
+	//	console.log(containers);
+	//});
+
+	//r.clbs.all(function (clbs) {
+	//	clbs[0].details(function (reply) {
+	//		console.log(reply);
+	//	});
+	//});
+
+	//rack.cloudDNS.domains.all(function (domains) {
+	//	domains.forEach(function (domain) {
+	//		domain.records.all(function (records) {
+	//			console.log('RECORDS', records);
+	//		});
+	//	});
+	//});
+
+	//rack.servers.all(function (servers) {
+	//	servers.forEach(function (server) {
+	//		if (server.name.indexOf('WebHead') > -1) {
+	//			server.listMetadata(function (reply) {
+	//				console.log(reply);
+	//			});
+	//		}
+	//	});
+	//});
 
 	//console.log(typeof rack.products.cloudMonitoring.overview);
 	//rack.cloudMonitoring.overview(function (reply) {
@@ -109,6 +141,10 @@ new RacksJS({
 	//	}
 	//}
 	//rack.cloudLoadBalancers.loadBalancers.all(function (lbs) {
-	//	console.log(lbs);
+	//	lbs.forEach(function (lb) {
+	//		lb.nodes.all(function (nodes) {
+	//			console.log(nodes);
+	//		});
+	//	});
 	//});
 });

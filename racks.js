@@ -323,6 +323,7 @@
         };
         // Expose some shortcuts for easier scripting
         rack.servers = rack.cloudServersOpenStack.servers;
+        rack.networks = rack.cloudServersOpenStack.networks;
         rack.cloudLoadBalancers = {
             loadBalancers: {
                 meta: {
@@ -666,6 +667,10 @@
                         url: this.meta.target()
                     }, function (reply) {
                         var response = [];
+                        // Most good API resources reply this way: ie: get /servers (what we call servers.all())
+                        // respond with { servers: [ {}, {}, {} ... ] }
+                        // which is exactly what we want - all we do is strip the outer { servers: } object
+                        // and pass the array that was requested
                         if (reply[resource.meta.name] !== undefined) {
                             if (resource.model === undefined) {
                                 cb(reply[resource.meta.name]);
@@ -675,22 +680,18 @@
                                 });
                                 cb(response);
                             }
-                        } else if (reply[resource.meta.resourceString] !== undefined) {
-                            cb(reply[resource.meta.resourceString]);
+                        // However, some API resources are lame :( and respond in plaintext
+                        // if so, we'll sort of build that model for them (ie: an array of the objects they requested)
+                        } else if (resource.meta.plaintext !== undefined) {
+                            reply.forEach(function (raw) {
+                                response.push(buildModel(resource, raw));
+                            });
+                            cb(response);
+                        // some resources are bad, and dont respond well to a GET at their /, or we didn't code around their weirdness yet
+                        // Typically, these are resources which legitimently shouldn't have .all(), like /getAccount in cloudMonitoring
                         } else {
-                            if (resource.meta.plaintext !== undefined) {
-                                // If we're expecting a plaintext reply, as is the case with cloudFiles,
-                                // then strip the trailing newline (substr), and split into an array, then return
-                                //cb(reply.substr(0, reply.length-1).split("\n"));
-                                // This is now down in .https()
-                                reply.forEach(function (raw) {
-                                    response.push(buildModel(resource, raw));
-                                });
-                                cb(response);
-                            } else {
-                                console.log('product wrapping failure - contact the developers of racksjs ->', resource.meta);
-                                cb(reply);
-                            }
+                            rack.log('product wrapping failure - contact the developers of racksjs', resource.meta);
+                            cb(reply);
                         }
                     });
                 };
