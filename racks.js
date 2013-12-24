@@ -329,10 +329,60 @@
                     resourceString: 'loadbalancers',
                 },
                 model: function (catalog) {
+                    var resource = this;
                     catalog.details = function (cb) {
-                        rack.get(catalog.target(), cb);
+                        rack.get(this.meta.target(), cb);
                     };
+                    catalog.listVirtualIPs = function (cb) {
+                        rack.get(this.meta.target() + '/virtualips', cb);
+                    };
+                    catalog.usage = function (cb) {
+                        rack.get(this.meta.target() + '/usage/current', cb);
+                    };
+                    catalog.sessionpersistence = {
+                        list: function (cb) {
+                            rack.get(resource.meta.target() + '/sessionpersistence', cb);
+                        },
+                        enable: function (cb) {
+                            rack.put(resource.meta.target() + '/sessionpersistence', cb);
+                        },
+                        disable: function (cb) {
+                            rack.delete(resource.meta.target() + '/sessionpersistence', cb);
+                        }
+                    };
+                    catalog.connectionlogging = {
+                        list: function (cb) {
+                            rack.get(resource.meta.target() + '/connectionlogging', cb);
+                        },
+                        enable: function (cb) {
+                            rack.put(resource.meta.target() + '/sessionpersistence?enabled=true', cb);
+                        },
+                        disable: function (cb) {
+                            rack.put(resource.meta.target() + '/sessionpersistence?enabled=false', cb);
+                        }
+                    };
+                    catalog.accesslist = {
+                        list: function (cb) {
+                            rack.get(resource.meta.target() + '/accesslist', cb);
+                        },
+                        update: function (cb) {
+
+                        },
+                        delete: function (item, cb) {
+
+                        }
+                    };
+                    catalog.nodes = subResource(resource, catalog.id, 'nodes');
                     return catalog;
+                },
+                listDomains: function (cb) {
+                    rack.get(this.meta.target() + '/alloweddomains', cb);
+                },
+                listProtocols: function (cb) {
+                    rack.get(this.meta.target() + '/protocols', cb);
+                },
+                listAlgorithms: function (cb) {
+                    rack.get(this.meta.target() + '/algorithms', cb);
                 },
                 new: function () {
                     console.log('unimplimented');
@@ -492,30 +542,8 @@
                         rack.get(resource.meta.target(), cb);
                     };
                     // Subresource example
-                    catalog.records = {
-                        meta: {
-                            target: function () {
-                                return resource.meta.target() + '/' + catalog.id + '/records';
-                            }
-                        },
-                        all: function (cb) {
-                            rack.get(this.meta.target(), function (reply) {
-                                cb(reply.records);
-                            });
-                        }
-                    };
-                    catalog.subdomains = {
-                        meta: {
-                            target: function () {
-                                return resource.meta.target() + '/' + catalog.id + '/subdomains';
-                            }
-                        },
-                        all: function (cb) {
-                            rack.get(this.meta.target(), function (reply) {
-                                cb(reply.domains);
-                            });
-                        }
-                    };
+                    catalog.records = subResource(resource, catalog.id, 'records');
+                    catalog.subdomains = subResource(resource, catalog.id, 'subdomains');
                     return catalog;
                 }
             },
@@ -614,19 +642,21 @@
         }
         // Wracks each item in the product object -> things like cloudServersOpenStack.servers are resources.
         // we add helpful wrappers, like .all, .find, etc.
-        function buildResource(productName, resourceName) {
+        function buildResource(productName, resourceName, subResource) {
             // Build this products .meta()
-            var resource = rack[productName][resourceName];
+            var resource = (subResource === undefined) ? rack[productName][resourceName] : subResource;
             if (resource.meta === undefined) {
                 resource.meta = {};
             }
             resource.meta.name = resourceName;
             resource.meta.product = productName;
             // Call our parent products .target() function and append our resource name
-            resource.meta.target = function () {
-                var resourcePath = (resource.meta.resourceString === undefined) ? this.name : resource.meta.resourceString;
-                return rack[productName].meta.target() + resourcePath;
-            };
+            if (resource.meta.target === undefined) {
+                resource.meta.target = function () {
+                    var resourcePath = (resource.meta.resourceString === undefined) ? this.name : resource.meta.resourceString;
+                    return rack[productName].meta.target() + resourcePath;
+                };
+            }
             // Get all resources, bind reply into resources.model() (if there is one), and callback
             if (resource.meta.noResource === undefined) {
                 resource.all = function (cb) {
@@ -645,6 +675,8 @@
                                 });
                                 cb(response);
                             }
+                        } else if (reply[resource.meta.resourceString] !== undefined) {
+                            cb(reply[resource.meta.resourceString]);
                         } else {
                             if (resource.meta.plaintext !== undefined) {
                                 // If we're expecting a plaintext reply, as is the case with cloudFiles,
@@ -676,6 +708,17 @@
                 };
             }
             return resource;
+        }
+        // A quick wrapper for defining a subresource -> still wraps buildResource, but provides a modified .target() with its parents id
+        function subResource(resource, id, subResource) {
+            return buildResource(resource.meta.product, resource.meta.name + '/' + subResource, {
+                meta: {
+                    resourceString: subResource,
+                    target: function () {
+                        return resource.meta.target() + '/' + id + '/' + subResource;
+                    }
+                }
+            });
         }
         serviceCatalog.forEach(function (product) {
             var resourceName;
