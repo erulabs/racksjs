@@ -11,13 +11,28 @@ Proper documentation and a lot more examples are soon to come - we're still miss
 ### Usage
     // Include racks.js and start it with a few settings
     new (require('../racks.js'))({
-        username: process.argv[2], // mycloud.rackspace.com username
-        apiKey: process.argv[3], // rackspace API KEY
+        username: 'Rackspace cloud username',
+        apiKey: 'Rackspace cloud API KEY',
         verbosity: 1, // 0 - 5, 0 is no output, 1 is script only (rs.log), 5 is debug.
         cache: true // Defaults to false - cache authentication in file
     }, function (rs) {
         // Log the error and stop if we fail to authenticate
         if (rs.error) return rs.log(rs.error);
+        //
+        // You can find details about all the products and their resources by diving into RacksJS.products object.
+        // If you're familiar with docs.rackspace.com, the "product -> resource -> action" concept
+        // shouldn't seem strange. With the docs in mind, you'll start to guess at products:
+        //   rs.cloudServersOpenStack.servers ... .networks ... .flavors 
+        //   rs.cloudLoadBalancers.loadBalancers
+        //   rs.cloudFiles.containers
+        // RacksJS provides shortcuts as well, which should be easy to guess: rs.servers, rs.clbs, rs.cf...
+        // each "resource" (containers, servers) belongs to one "product" (cloudLoadBalancers)
+        // and each resource has some common functionality: .all(), .find(), and sometimes .new().
+        // there are often other, resource specific functions. (and sometimes product functions!)
+        // read the docs, the racks.js code, or console.log(resource);
+        // 
+        // Below I will try to illistrate some example Racks.js code. For brand new stuff,
+        // check tests/generic.js
         //
         //
         /* // shorthand for: RacksJS.cloudFiles.containers.all()
