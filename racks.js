@@ -54,15 +54,15 @@
         opts.url = url.parse(opts.url);
         opts.host = opts.url.host;
         opts.path = opts.url.path;
-        delete opts.url;
-        if (this.verbosity > 3) {
-            this.log('HTTP Request: ', opts);
-        }
         // HTTPS request
         var rack = this,
             plaintext = opts.plaintext,
             request;
         delete opts.plaintext;
+        delete opts.url;
+        if (this.verbosity > 3) {
+            this.log('HTTP Request: ', opts);
+        }
         request = https.request(opts, function (response) {
             var rawReply = '',
                 reply = '';
@@ -690,7 +690,7 @@
                         // some resources are bad, and dont respond well to a GET at their /, or we didn't code around their weirdness yet
                         // Typically, these are resources which legitimently shouldn't have .all(), like /getAccount in cloudMonitoring
                         } else {
-                            rack.log('product wrapping failure - contact the developers of racksjs', resource.meta);
+                            rack.log(undefined, 'product wrapping failure - contact the developers of racksjs', resource.meta);
                             cb(reply);
                         }
                     });
