@@ -239,18 +239,17 @@
                 model: function (catalog) {
                     catalog.show = function (cb) {
                         // Public and private networks do not reply to show() - they 404.
-                        // however, the onlything .show() really does is give you a CIDR - therefore,
+                        // however, the only thing .show() really does is give you a CIDR - therefore,
                         // instead of 404ing weirdly, we'll just reply back instantly without a CIDR
                         // since we have all other data anyways...
                         // Because this is odd, we'll log a message for development mode only
-                        rack.log(undefined, 'You cannot run .show() on the default public and private networks!');
-                        rack.log(undefined, 'instead, RacksJS has returned a fake object that is everything .show()');
-                        rack.log(undefined, 'is, save the CIDR - so you might want to check for reply.cidr === undefined');
+                        rack.log(undefined, 'You cannot run .show() on the default public and private networks! Instead, RacksJS has returned a fake object that is everything .show() is, save the CIDR - so you might want to check for reply.cidr === undefined');
                         if (catalog.label === 'public' || catalog.label === 'private') {
                             cb({
                                 network: {
                                     id: catalog.id,
-                                    label: catalog.label
+                                    label: catalog.label,
+                                    cidr: undefined
                                 }
                             });
                         } else {
@@ -302,14 +301,15 @@
                             type: type
                         }}, cb);
                     };
-                    catalog.updateMetadata = function (metadata, cb) {
-                        rack.post(this.meta.target() + '/metadata', {
-                            metadata: metadata
-                        }, cb);
-                    };
-                    catalog.listMetadata = function (cb) {
-                        rack.get(this.meta.target() + '/metadata', cb);
-                    };
+                    //catalog.updateMetadata = function (metadata, cb) {
+                    //    rack.post(this.meta.target() + '/metadata', {
+                    //        metadata: metadata
+                    //    }, cb);
+                    //};
+                    //catalog.listMetadata = function (cb) {
+                    //    rack.get(this.meta.target() + '/metadata', cb);
+                    //};
+                    catalog.metadata = catalog.records = subResource(this, catalog.id, 'metadata');
                     catalog.listVirtualInterfaces = function (cb) {
                         rack.get(this.meta.target() + '/os-virtual-interfacesv2', cb);
                     };
@@ -649,7 +649,7 @@
             if (resource.meta === undefined) {
                 resource.meta = {};
             }
-            resource.meta.name = resourceName;
+            resource.meta.name = (resource.meta.name === undefined) ? resourceName : resource.meta.name;
             resource.meta.product = productName;
             // Call our parent products .target() function and append our resource name
             if (resource.meta.target === undefined) {
@@ -715,6 +715,7 @@
             return buildResource(resource.meta.product, resource.meta.name + '/' + subResource, {
                 meta: {
                     resourceString: subResource,
+                    name: subResource,
                     target: function () {
                         return resource.meta.target() + '/' + id + '/' + subResource;
                     }

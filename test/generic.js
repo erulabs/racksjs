@@ -16,17 +16,15 @@ new RacksJS({
 	}
 	var r = rack;
 
-	r.networks.all(function (networks) {
-		networks.forEach(function (network) {
-			network.show(function (reply) {
-				console.log(reply);
-			});
-		});
-	});
-
 	//r.cf.all(function (containers) {
 	//	console.log(containers);
 	//});
+
+	r.servers.all(function (servers) {
+		servers[0].metadata.all(function (metadata) {
+			console.log(metadata);
+		});
+	});
 
 	//r.clbs.all(function (clbs) {
 	//	clbs[0].details(function (reply) {
@@ -42,19 +40,9 @@ new RacksJS({
 	//	});
 	//});
 
-	//rack.servers.all(function (servers) {
-	//	servers.forEach(function (server) {
-	//		if (server.name.indexOf('WebHead') > -1) {
-	//			server.listMetadata(function (reply) {
-	//				console.log(reply);
-	//			});
-	//		}
-	//	});
-	//});
 
-	//console.log(typeof rack.products.cloudMonitoring.overview);
+	// some products have "product-level" functionlity, like cloudMonitoring's 'overview'
 	//rack.cloudMonitoring.overview(function (reply) {
-
 	//});
 	//rack.autoscale.groups.all(function (volumes) {
 	//	console.log(volumes);
@@ -113,14 +101,6 @@ new RacksJS({
 	//});
 	//rack.clbs.all(function (servers) {
 	//	servers.forEach(function (server) {
-	//		server.updateMetadata({
-	//			'rax_service_level_automation': 'Complete'
-	//		}, function (reply) {
-	//			console.log(reply);
-	//		});
-	//		server.listMetadata(function (details) {
-	//			console.log(details);
-	//		});
 	//		server.reboot(function (reply) {
 	//			console.log(reply);
 	//		});
