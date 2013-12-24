@@ -227,6 +227,122 @@
             authAction();
         }
     };
+    // buildModel - wraps each item in typical API response arrays. In other words, for a list of servers, each server (which is a {}),
+    // gets appended with a bunch of functionality (whatever is in its .model()), some metadata which is nice for scripting
+    // and most importantly, a target function
+    RacksJS.prototype.buildModel = function (resourceTemplate, rawResource) {
+        // Metadata
+        var model = resourceTemplate.model(rawResource);
+        if (model.meta === undefined) {
+            model.meta = {};
+        }
+        model.meta.resource = resourceTemplate.meta.name;
+        model.meta.product = resourceTemplate.meta.product;
+        // meta.target() -> gets the resources target(), appends this models name or ID, and returns
+        model.meta.target = function () {
+            var target = resourceTemplate.meta.target(),
+                idOrName = '';
+            if (target.substr(-1) === '/') {
+                target = target.substr(0, target.length - 1);
+            }
+            if (model.id !== undefined) {
+                idOrName = model.id;
+            } else if (model.name !== undefined) {
+                idOrName = model.name;
+            } else {
+                idOrName = '';
+            }
+            return target + '/' + idOrName;
+        };
+        return model;
+    };
+    // Wrap resource requests (.all())
+    RacksJS.prototype.resourceRequest = function (resource, cb) {
+        var rack = this;
+        rack.https({
+            plaintext: resource.meta.plaintext,
+            method: 'GET',
+            url: resource.meta.target()
+        }, function (reply) {
+            var response = [];
+            // Most good API resources reply this way: ie: get /servers (what we call servers.all())
+            // respond with { servers: [ {}, {}, {} ... ] }
+            // which is exactly what we want - all we do is strip the outer { servers: } object
+            // and pass the array that was requested
+            if (reply[resource.meta.name] !== undefined) {
+                if (resource.model === undefined) {
+                    cb(reply[resource.meta.name]);
+                } else {
+                    if (reply[resource.meta.name].forEach === undefined) {
+                        cb(rack.buildModel(resource, reply[resource.meta.name]));
+                    } else {
+                        reply[resource.meta.name].forEach(function (raw) {
+                            response.push(rack.buildModel(resource, raw));
+                        });
+                        cb(response);
+                    }
+                }
+            // However, some API resources are lame :( and respond in plaintext
+            // if so, we'll sort of build that model for them (ie: an array of the objects they requested)
+            } else if (resource.meta.plaintext !== undefined) {
+                reply.forEach(function (raw) {
+                    response.push(rack.buildModel(resource, raw));
+                });
+                cb(response);
+            // some resources are bad, and dont respond well to a GET at their /, or we didn't code around their weirdness yet
+            // Typically, these are resources which legitimently shouldn't have .all(), like /getAccount in cloudMonitoring
+            } else {
+                rack.log(undefined, 'product wrapping failure - contact the developers of racksjs', resource.meta);
+                cb(reply);
+            }
+        });
+    };
+    // A quick wrapper for defining a subresource -> still wraps buildResource, but provides a modified .target() with its parents id
+    RacksJS.prototype.subResource = function (resource, id, subResource) {
+        var rack = this;
+        return rack.buildResource(resource.meta.product, resource.meta.name + '/' + subResource, {
+            meta: {
+                resourceString: subResource,
+                name: subResource,
+                target: function () {
+                    return resource.meta.target() + '/' + id + '/' + subResource;
+                }
+            }
+        });
+    };
+    // Build a RacksJS resource - essentially just add .meta and most importantly .meta.target()
+    RacksJS.prototype.buildResource = function (productName, resourceName, subResource) {
+        // Build this products .meta()
+        var rack = this,
+            resource = (subResource === undefined) ? rack[productName][resourceName] : subResource;
+        if (resource.meta === undefined) {
+            resource.meta = {};
+        }
+        resource.meta.name = (resource.meta.name === undefined) ? resourceName : resource.meta.name;
+        resource.meta.product = productName;
+        // Call our parent products .target() function and append our resource name
+        if (resource.meta.target === undefined) {
+            resource.meta.target = function () {
+                var resourcePath = (resource.meta.resourceString === undefined) ? this.name : resource.meta.resourceString;
+                return rack[productName].meta.target() + resourcePath;
+            };
+        }
+        // Get all resources, bind reply into resources.model() (if there is one), and callback
+        if (resource.meta.noResource === undefined) {
+            resource.all = function (cb) {
+                rack.resourceRequest(resource, cb);
+            };
+            // 
+            resource.assume = function (obj, cb) {
+                if (obj.id === undefined && obj.name === undefined) {
+                    rack.log('[INFO] .assume() relies on .target() which in turn requires either .id or .name on the model - please define one or the other');
+                } else {
+                    cb(rack.buildModel(resource, obj));
+                }
+            };
+        }
+        return resource;
+    };
     // RacksJS product and resource functionality library
     // Interpert the serviceCatalog returned by .authenticate(). Wrap .all(), .where(), etc.
     RacksJS.prototype.buildCatalog = function (serviceCatalog) {
@@ -309,7 +425,7 @@
                     //catalog.listMetadata = function (cb) {
                     //    rack.get(this.meta.target() + '/metadata', cb);
                     //};
-                    catalog.metadata = catalog.records = subResource(this, catalog.id, 'metadata');
+                    catalog.metadata = catalog.records = rack.subResource(this, catalog.id, 'metadata');
                     catalog.listVirtualInterfaces = function (cb) {
                         rack.get(this.meta.target() + '/os-virtual-interfacesv2', cb);
                     };
@@ -325,6 +441,22 @@
         rack.servers = rack.cloudServersOpenStack.servers;
         rack.networks = rack.cloudServersOpenStack.networks;
         rack.cloudLoadBalancers = {
+            algorithms: {
+                meta: {
+                    resourceString: 'loadbalancers/algorithms'
+                }
+            },
+            alloweddomains: {
+                meta: {
+                    resourceString: 'loadbalancers/alloweddomains',
+                    name: 'allowedDomains'
+                }
+            },
+            protocols: {
+                meta: {
+                    resourceString: 'loadbalancers/protocols'
+                }
+            },
             loadBalancers: {
                 meta: {
                     resourceString: 'loadbalancers',
@@ -365,25 +497,10 @@
                     catalog.accesslist = {
                         list: function (cb) {
                             rack.get(resource.meta.target() + '/accesslist', cb);
-                        },
-                        update: function (cb) {
-
-                        },
-                        delete: function (item, cb) {
-
                         }
                     };
-                    catalog.nodes = subResource(resource, catalog.id, 'nodes');
+                    catalog.nodes = rack.subResource(resource, catalog.id, 'nodes');
                     return catalog;
-                },
-                listDomains: function (cb) {
-                    rack.get(this.meta.target() + '/alloweddomains', cb);
-                },
-                listProtocols: function (cb) {
-                    rack.get(this.meta.target() + '/protocols', cb);
-                },
-                listAlgorithms: function (cb) {
-                    rack.get(this.meta.target() + '/algorithms', cb);
                 },
                 new: function () {
                     console.log('unimplimented');
@@ -527,13 +644,13 @@
         rack.cloudServers = {
         };
         rack.cloudDNS = {
-            limits: {
-                model: function (catalog) {
+            limits: function (cb) {
+                rack.get(this.meta.target() + '/limits', function (catalog) {
                     catalog.types = function (cb) {
                         rack.get(this.meta.target() + '/types', cb);
                     };
-                    return catalog;
-                }
+                    cb(catalog);
+                });
             },
             domains: {
                 model: function (catalog) {
@@ -542,8 +659,8 @@
                         rack.get(resource.meta.target(), cb);
                     };
                     // Subresource example
-                    catalog.records = subResource(resource, catalog.id, 'records');
-                    catalog.subdomains = subResource(resource, catalog.id, 'subdomains');
+                    catalog.records = rack.subResource(resource, catalog.id, 'records');
+                    catalog.subdomains = rack.subResource(resource, catalog.id, 'subdomains');
                     return catalog;
                 }
             },
@@ -561,9 +678,6 @@
                     };
                     return catalog;
                 }
-            },
-            account: function (cb) {
-
             },
             limits: {
             },
@@ -611,116 +725,6 @@
         };
         rack.products = {};
         rack.serviceCatalog = serviceCatalog;
-        // buildModel - wraps each item in typical API response arrays. In other words, for a list of servers, each server (which is a {}),
-        // gets appended with a bunch of functionality (whatever is in its .model()), some metadata which is nice for scripting
-        // and most importantly, a target function
-        function buildModel(resourceTemplate, rawResource) {
-            // Metadata
-            var model = resourceTemplate.model(rawResource);
-            if (model.meta === undefined) {
-                model.meta = {};
-            }
-            model.meta.resource = resourceTemplate.meta.name;
-            model.meta.product = resourceTemplate.meta.product;
-            // meta.target() -> gets the resources target(), appends this models name or ID, and returns
-            model.meta.target = function () {
-                var target = resourceTemplate.meta.target(),
-                    idOrName = '';
-                if (target.substr(-1) === '/') {
-                    target = target.substr(0, target.length - 1);
-                }
-                if (model.id !== undefined) {
-                    idOrName = model.id;
-                } else if (model.name !== undefined) {
-                    idOrName = model.name;
-                } else {
-                    idOrName = '';
-                }
-                return target + '/' + idOrName;
-            };
-            return model;
-        }
-        // Wracks each item in the product object -> things like cloudServersOpenStack.servers are resources.
-        // we add helpful wrappers, like .all, .find, etc.
-        function buildResource(productName, resourceName, subResource) {
-            // Build this products .meta()
-            var resource = (subResource === undefined) ? rack[productName][resourceName] : subResource;
-            if (resource.meta === undefined) {
-                resource.meta = {};
-            }
-            resource.meta.name = (resource.meta.name === undefined) ? resourceName : resource.meta.name;
-            resource.meta.product = productName;
-            // Call our parent products .target() function and append our resource name
-            if (resource.meta.target === undefined) {
-                resource.meta.target = function () {
-                    var resourcePath = (resource.meta.resourceString === undefined) ? this.name : resource.meta.resourceString;
-                    return rack[productName].meta.target() + resourcePath;
-                };
-            }
-            // Get all resources, bind reply into resources.model() (if there is one), and callback
-            if (resource.meta.noResource === undefined) {
-                resource.all = function (cb) {
-                    rack.https({
-                        plaintext: resource.meta.plaintext,
-                        method: 'GET',
-                        url: this.meta.target()
-                    }, function (reply) {
-                        var response = [];
-                        // Most good API resources reply this way: ie: get /servers (what we call servers.all())
-                        // respond with { servers: [ {}, {}, {} ... ] }
-                        // which is exactly what we want - all we do is strip the outer { servers: } object
-                        // and pass the array that was requested
-                        if (reply[resource.meta.name] !== undefined) {
-                            if (resource.model === undefined) {
-                                cb(reply[resource.meta.name]);
-                            } else {
-                                reply[resource.meta.name].forEach(function (raw) {
-                                    response.push(buildModel(resource, raw));
-                                });
-                                cb(response);
-                            }
-                        // However, some API resources are lame :( and respond in plaintext
-                        // if so, we'll sort of build that model for them (ie: an array of the objects they requested)
-                        } else if (resource.meta.plaintext !== undefined) {
-                            reply.forEach(function (raw) {
-                                response.push(buildModel(resource, raw));
-                            });
-                            cb(response);
-                        // some resources are bad, and dont respond well to a GET at their /, or we didn't code around their weirdness yet
-                        // Typically, these are resources which legitimently shouldn't have .all(), like /getAccount in cloudMonitoring
-                        } else {
-                            rack.log(undefined, 'product wrapping failure - contact the developers of racksjs', resource.meta);
-                            cb(reply);
-                        }
-                    });
-                };
-                resource.find = function (cb) {
-                    console.log('unimplimented');
-                    cb();
-                };
-                // 
-                resource.assume = function (obj, cb) {
-                    if (obj.id === undefined && obj.name === undefined) {
-                        rack.log('[INFO] .assume() relies on .target() which in turn requires either .id or .name on the model - please define one or the other');
-                    } else {
-                        cb(buildModel(resource, obj));
-                    }
-                };
-            }
-            return resource;
-        }
-        // A quick wrapper for defining a subresource -> still wraps buildResource, but provides a modified .target() with its parents id
-        function subResource(resource, id, subResource) {
-            return buildResource(resource.meta.product, resource.meta.name + '/' + subResource, {
-                meta: {
-                    resourceString: subResource,
-                    name: subResource,
-                    target: function () {
-                        return resource.meta.target() + '/' + id + '/' + subResource;
-                    }
-                }
-            });
-        }
         serviceCatalog.forEach(function (product) {
             var resourceName;
             // If we have a matching product
@@ -754,7 +758,7 @@
                     if (rack[product.name].hasOwnProperty(resourceName)) {
                         // the "meta" property of any given product is not a resource and should be ignored
                         if (resourceName !== 'meta') {
-                            rack[product.name][resourceName] = buildResource(product.name, resourceName);
+                            rack[product.name][resourceName] = rack.buildResource(product.name, resourceName);
                             // alias it in .products
                             rack.products[product.name][resourceName] = rack[product.name][resourceName];
                         }

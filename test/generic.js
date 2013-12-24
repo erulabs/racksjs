@@ -15,5 +15,11 @@ new (require('../racks.js'))({
 		rs.log(containers);
 	});
 	*/
-	
+	rs.servers.all(function (reply) {
+		console.log(reply);
+	});
+	//rs.cloudDNS.limits(function (reply) {
+	//	console.log(reply);
+	//});
+
 });
