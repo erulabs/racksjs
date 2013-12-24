@@ -356,10 +356,10 @@
                             rack.get(resource.meta.target() + '/connectionlogging', cb);
                         },
                         enable: function (cb) {
-                            rack.put(resource.meta.target() + '/sessionpersistence?enabled=true', cb);
+                            rack.put(resource.meta.target() + '/connectionlogging?enabled=true', cb);
                         },
                         disable: function (cb) {
-                            rack.put(resource.meta.target() + '/sessionpersistence?enabled=false', cb);
+                            rack.put(resource.meta.target() + '/connectionlogging?enabled=false', cb);
                         }
                     };
                     catalog.accesslist = {
@@ -401,7 +401,6 @@
                 },
                 model: function (containerName) {
                     var catalog = {
-                        // FIXME: this should be added to buildModel() -> product.resource.model() should ONLY return functions
                         meta: {
                             name: containerName
                         }
