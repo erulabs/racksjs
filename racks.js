@@ -405,7 +405,9 @@
                 },
                 model: function (catalog) {
                     catalog.details = function (cb) {
-                        rack.get(this._racksmeta.target(), cb);
+                        rack.get(this._racksmeta.target(), function (reply) {
+                            cb(reply.server);
+                        });
                     };
                     catalog.addresses = function (cb) {
                         rack.get(this._racksmeta.target() + '/ips', cb);
