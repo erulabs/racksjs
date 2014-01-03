@@ -41,6 +41,9 @@
     // Handle HTTP requests. Generally same syntax as node's https.request
     // with a handful of helpful added defaults, such as JSON preference, parsing chunked replies, passing authToken, etc.
     RacksJS.prototype.https = function (opts, cb) {
+        var rack = this,
+            plaintext = opts.plaintext,
+            request;
         // Set headers and defaults
         opts.headers = (opts.headers === undefined) ? {} : opts.headers;
         if (this.authToken) {
@@ -54,10 +57,7 @@
         opts.url = url.parse(opts.url);
         opts.host = opts.url.host;
         opts.path = opts.url.path;
-        // HTTPS request
-        var rack = this,
-            plaintext = opts.plaintext,
-            request;
+        // delete RackJS options that were piggybacked on
         delete opts.plaintext;
         delete opts.url;
         if (this.verbosity > 3) {
@@ -264,19 +264,23 @@
             method: 'GET',
             url: resource.meta.target()
         }, function (reply) {
-            var response = [];
+            var response = [],
+                resourceObjectMeta = resource.meta.name;
+            if (resource.meta.replyString !== undefined) {
+                resourceObjectMeta = resource.meta.replyString;
+            }
             // Most good API resources reply this way: ie: get /servers (what we call servers.all())
             // respond with { servers: [ {}, {}, {} ... ] }
             // which is exactly what we want - all we do is strip the outer { servers: } object
             // and pass the array that was requested
-            if (reply[resource.meta.name] !== undefined) {
+            if (reply[resourceObjectMeta] !== undefined) {
                 if (resource.model === undefined) {
-                    cb(reply[resource.meta.name]);
+                    cb(reply[resourceObjectMeta]);
                 } else {
-                    if (reply[resource.meta.name].forEach === undefined) {
-                        cb(rack.buildModel(resource, reply[resource.meta.name]));
+                    if (reply[resourceObjectMeta].forEach === undefined) {
+                        cb(rack.buildModel(resource, reply[resourceObjectMeta]));
                     } else {
-                        reply[resource.meta.name].forEach(function (raw) {
+                        reply[resourceObjectMeta].forEach(function (raw) {
                             response.push(rack.buildModel(resource, raw));
                         });
                         cb(response);
@@ -425,7 +429,7 @@
                     //catalog.listMetadata = function (cb) {
                     //    rack.get(this.meta.target() + '/metadata', cb);
                     //};
-                    catalog.metadata = catalog.records = rack.subResource(this, catalog.id, 'metadata');
+                    catalog.metadata = rack.subResource(this, catalog.id, 'metadata');
                     catalog.listVirtualInterfaces = function (cb) {
                         rack.get(this.meta.target() + '/os-virtual-interfacesv2', cb);
                     };
@@ -443,7 +447,8 @@
         rack.cloudLoadBalancers = {
             algorithms: {
                 meta: {
-                    resourceString: 'loadbalancers/algorithms'
+                    resourceString: 'loadbalancers/algorithms',
+                    name: 'algorithms'
                 }
             },
             alloweddomains: {
@@ -454,7 +459,8 @@
             },
             protocols: {
                 meta: {
-                    resourceString: 'loadbalancers/protocols'
+                    resourceString: 'loadbalancers/protocols',
+                    name: 'protocols'
                 }
             },
             loadBalancers: {
@@ -571,6 +577,9 @@
                 }
             },
             types: {
+                meta: {
+                    replyString: 'volume_types'
+                },
                 model: function (catalog) {
                     catalog.describe = function (cb) {
                         rack.get(this.meta.target(), cb);
@@ -645,6 +654,7 @@
         };
         rack.cloudDNS = {
             limits: function (cb) {
+                // a limited model - ie: we'll add some functionality for the reply of this and only this request
                 rack.get(this.meta.target() + '/limits', function (catalog) {
                     catalog.types = function (cb) {
                         rack.get(this.meta.target() + '/types', cb);
@@ -682,7 +692,9 @@
             limits: {
             },
             audits: {
-
+                meta: {
+                    replyString: 'values'
+                }
             },
             checkTypes: {
                 meta: {
@@ -714,8 +726,13 @@
                     return catalog;
                 }
             },
+            // cloudMonitoring is a nightmare - there is a "metadata" object appended to every request,
+            // whose value has yet to be decided.
+            // Additionally, -all- resources reply "values: []".
             agents: {
-
+                meta: {
+                    replyString: 'values'
+                }
             },
             //http://docs.rackspace.com/cm/api/v1.0/cm-devguide/content/service-views.html
             overview: function (cb) {
