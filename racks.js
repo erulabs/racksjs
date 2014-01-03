@@ -396,6 +396,13 @@
                 }
             },
             servers: {
+                meta: {
+                    requiredFields: {
+                        name: 'string',
+                        imageRef: 'string', //might be rack.cloudServersOpenStack.images.model([]),
+                        flavorRef: 'string' //might be rack.cloudServersOpenStack.flavors.model([])
+                    }
+                },
                 model: function (catalog) {
                     catalog.details = function (cb) {
                         rack.get(this.meta.target(), cb);
@@ -436,8 +443,7 @@
                     catalog.vips = catalog.listVirtualInterfaces;
                     return catalog;
                 },
-                new: function () {
-                    console.log('unimplimented');
+                new: function (args, cb) {
                 }
             }
         };
