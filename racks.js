@@ -231,16 +231,16 @@
     // gets appended with a bunch of functionality (whatever is in its .model()), some metadata which is nice for scripting
     // and most importantly, a target function
     RacksJS.prototype.buildModel = function (resourceTemplate, rawResource) {
-        // Metadata
+        // RackJS metadata -> _racksmeta.
         var model = resourceTemplate.model(rawResource);
-        if (model.meta === undefined) {
-            model.meta = {};
+        if (model._racksmeta === undefined) {
+            model._racksmeta = {};
         }
-        model.meta.resource = resourceTemplate.meta.name;
-        model.meta.product = resourceTemplate.meta.product;
-        // meta.target() -> gets the resources target(), appends this models name or ID, and returns
-        model.meta.target = function () {
-            var target = resourceTemplate.meta.target(),
+        model._racksmeta.resource = resourceTemplate._racksmeta.name;
+        model._racksmeta.product = resourceTemplate._racksmeta.product;
+        // _racksmeta.target() -> gets the resources target(), appends this models name or ID, and returns
+        model._racksmeta.target = function () {
+            var target = resourceTemplate._racksmeta.target(),
                 idOrName = '';
             if (target.substr(-1) === '/') {
                 target = target.substr(0, target.length - 1);
@@ -260,14 +260,14 @@
     RacksJS.prototype.resourceRequest = function (resource, cb) {
         var rack = this;
         rack.https({
-            plaintext: resource.meta.plaintext,
+            plaintext: resource._racksmeta.plaintext,
             method: 'GET',
-            url: resource.meta.target()
+            url: resource._racksmeta.target()
         }, function (reply) {
             var response = [],
-                resourceObjectMeta = resource.meta.name;
-            if (resource.meta.replyString !== undefined) {
-                resourceObjectMeta = resource.meta.replyString;
+                resourceObjectMeta = resource._racksmeta.name;
+            if (resource._racksmeta.replyString !== undefined) {
+                resourceObjectMeta = resource._racksmeta.replyString;
             }
             // Most good API resources reply this way: ie: get /servers (what we call servers.all())
             // respond with { servers: [ {}, {}, {} ... ] }
@@ -288,7 +288,7 @@
                 }
             // However, some API resources are lame :( and respond in plaintext
             // if so, we'll sort of build that model for them (ie: an array of the objects they requested)
-            } else if (resource.meta.plaintext !== undefined) {
+            } else if (resource._racksmeta.plaintext !== undefined) {
                 reply.forEach(function (raw) {
                     response.push(rack.buildModel(resource, raw));
                 });
@@ -304,35 +304,35 @@
     // A quick wrapper for defining a subresource -> still wraps buildResource, but provides a modified .target() with its parents id
     RacksJS.prototype.subResource = function (resource, id, subResource) {
         var rack = this;
-        return rack.buildResource(resource.meta.product, resource.meta.name + '/' + subResource, {
-            meta: {
+        return rack.buildResource(resource._racksmeta.product, resource._racksmeta.name + '/' + subResource, {
+            _racksmeta: {
                 resourceString: subResource,
                 name: subResource,
                 target: function () {
-                    return resource.meta.target() + '/' + id + '/' + subResource;
+                    return resource._racksmeta.target() + '/' + id + '/' + subResource;
                 }
             }
         });
     };
-    // Build a RacksJS resource - essentially just add .meta and most importantly .meta.target()
+    // Build a RacksJS resource - essentially just add ._racksmeta and most importantly ._racksmeta.target()
     RacksJS.prototype.buildResource = function (productName, resourceName, subResource) {
         // Build this products .meta()
         var rack = this,
             resource = (subResource === undefined) ? rack[productName][resourceName] : subResource;
-        if (resource.meta === undefined) {
-            resource.meta = {};
+        if (resource._racksmeta === undefined) {
+            resource._racksmeta = {};
         }
-        resource.meta.name = (resource.meta.name === undefined) ? resourceName : resource.meta.name;
-        resource.meta.product = productName;
+        resource._racksmeta.name = (resource._racksmeta.name === undefined) ? resourceName : resource._racksmeta.name;
+        resource._racksmeta.product = productName;
         // Call our parent products .target() function and append our resource name
-        if (resource.meta.target === undefined) {
-            resource.meta.target = function () {
-                var resourcePath = (resource.meta.resourceString === undefined) ? this.name : resource.meta.resourceString;
-                return rack[productName].meta.target() + resourcePath;
+        if (resource._racksmeta.target === undefined) {
+            resource._racksmeta.target = function () {
+                var resourcePath = (resource._racksmeta.resourceString === undefined) ? this.name : resource._racksmeta.resourceString;
+                return rack[productName]._racksmeta.target() + resourcePath;
             };
         }
         // Get all resources, bind reply into resources.model() (if there is one), and callback
-        if (resource.meta.noResource === undefined) {
+        if (resource._racksmeta.noResource === undefined) {
             resource.all = function (cb) {
                 rack.resourceRequest(resource, cb);
             };
@@ -353,7 +353,7 @@
         var rack = this;
         rack.cloudServersOpenStack = {
             networks: {
-                meta: {
+                _racksmeta: {
                     resourceString: 'os-networksv2'
                 },
                 model: function (catalog) {
@@ -373,7 +373,7 @@
                                 }
                             });
                         } else {
-                            rack.get(this.meta.target(), cb);
+                            rack.get(this._racksmeta.target(), cb);
                         }
                     };
                     return catalog;
@@ -382,7 +382,7 @@
             flavors: {
                 model: function (catalog) {
                     catalog.details = function (cb) {
-                        rack.get(this.meta.target(), cb);
+                        rack.get(this._racksmeta.target(), cb);
                     };
                     return catalog;
                 }
@@ -390,13 +390,13 @@
             images: {
                 model: function (catalog) {
                     catalog.details = function (cb) {
-                        rack.get(this.meta.target(), cb);
+                        rack.get(this._racksmeta.target(), cb);
                     };
                     return catalog;
                 }
             },
             servers: {
-                meta: {
+                _racksmeta: {
                     requiredFields: {
                         name: 'string',
                         imageRef: 'string', //might be rack.cloudServersOpenStack.images.model([]),
@@ -405,16 +405,16 @@
                 },
                 model: function (catalog) {
                     catalog.details = function (cb) {
-                        rack.get(this.meta.target(), cb);
+                        rack.get(this._racksmeta.target(), cb);
                     };
                     catalog.addresses = function (cb) {
-                        rack.get(this.meta.target() + '/ips', cb);
+                        rack.get(this._racksmeta.target() + '/ips', cb);
                     };
                     catalog.delete = function (cb) {
-                        rack.delete(this.meta.target(), cb);
+                        rack.delete(this._racksmeta.target(), cb);
                     };
                     catalog.action = function (obj, cb) {
-                        rack.post(this.meta.target() + '/action', obj, cb);
+                        rack.post(this._racksmeta.target() + '/action', obj, cb);
                     };
                     catalog.reboot = function (type, cb) {
                         if (typeof type === 'function') {
@@ -429,16 +429,16 @@
                         }}, cb);
                     };
                     //catalog.updateMetadata = function (metadata, cb) {
-                    //    rack.post(this.meta.target() + '/metadata', {
+                    //    rack.post(this._racksmeta.target() + '/metadata', {
                     //        metadata: metadata
                     //    }, cb);
                     //};
                     //catalog.listMetadata = function (cb) {
-                    //    rack.get(this.meta.target() + '/metadata', cb);
+                    //    rack.get(this._racksmeta.target() + '/metadata', cb);
                     //};
                     catalog.metadata = rack.subResource(this, catalog.id, 'metadata');
                     catalog.listVirtualInterfaces = function (cb) {
-                        rack.get(this.meta.target() + '/os-virtual-interfacesv2', cb);
+                        rack.get(this._racksmeta.target() + '/os-virtual-interfacesv2', cb);
                     };
                     catalog.vips = catalog.listVirtualInterfaces;
                     return catalog;
@@ -452,63 +452,63 @@
         rack.networks = rack.cloudServersOpenStack.networks;
         rack.cloudLoadBalancers = {
             algorithms: {
-                meta: {
+                _racksmeta: {
                     resourceString: 'loadbalancers/algorithms',
                     name: 'algorithms'
                 }
             },
             alloweddomains: {
-                meta: {
+                _racksmeta: {
                     resourceString: 'loadbalancers/alloweddomains',
                     name: 'allowedDomains'
                 }
             },
             protocols: {
-                meta: {
+                _racksmeta: {
                     resourceString: 'loadbalancers/protocols',
                     name: 'protocols'
                 }
             },
             loadBalancers: {
-                meta: {
+                _racksmeta: {
                     resourceString: 'loadbalancers',
                 },
                 model: function (catalog) {
                     var resource = this;
                     catalog.details = function (cb) {
-                        rack.get(this.meta.target(), cb);
+                        rack.get(this._racksmeta.target(), cb);
                     };
                     catalog.listVirtualIPs = function (cb) {
-                        rack.get(this.meta.target() + '/virtualips', cb);
+                        rack.get(this._racksmeta.target() + '/virtualips', cb);
                     };
                     catalog.usage = function (cb) {
-                        rack.get(this.meta.target() + '/usage/current', cb);
+                        rack.get(this._racksmeta.target() + '/usage/current', cb);
                     };
                     catalog.sessionpersistence = {
                         list: function (cb) {
-                            rack.get(resource.meta.target() + '/sessionpersistence', cb);
+                            rack.get(resource._racksmeta.target() + '/sessionpersistence', cb);
                         },
                         enable: function (cb) {
-                            rack.put(resource.meta.target() + '/sessionpersistence', cb);
+                            rack.put(resource._racksmeta.target() + '/sessionpersistence', cb);
                         },
                         disable: function (cb) {
-                            rack.delete(resource.meta.target() + '/sessionpersistence', cb);
+                            rack.delete(resource._racksmeta.target() + '/sessionpersistence', cb);
                         }
                     };
                     catalog.connectionlogging = {
                         list: function (cb) {
-                            rack.get(resource.meta.target() + '/connectionlogging', cb);
+                            rack.get(resource._racksmeta.target() + '/connectionlogging', cb);
                         },
                         enable: function (cb) {
-                            rack.put(resource.meta.target() + '/connectionlogging?enabled=true', cb);
+                            rack.put(resource._racksmeta.target() + '/connectionlogging?enabled=true', cb);
                         },
                         disable: function (cb) {
-                            rack.put(resource.meta.target() + '/connectionlogging?enabled=false', cb);
+                            rack.put(resource._racksmeta.target() + '/connectionlogging?enabled=false', cb);
                         }
                     };
                     catalog.accesslist = {
                         list: function (cb) {
-                            rack.get(resource.meta.target() + '/accesslist', cb);
+                            rack.get(resource._racksmeta.target() + '/accesslist', cb);
                         }
                     };
                     catalog.nodes = rack.subResource(resource, catalog.id, 'nodes');
@@ -524,13 +524,13 @@
         };
         rack.cloudFiles = {
             containers: {
-                meta: {
+                _racksmeta: {
                     resourceString: '',
                     plaintext: true,
                 },
                 model: function (containerName) {
                     var catalog = {
-                        meta: {
+                        _racksmeta: {
                             name: containerName
                         }
                     };
@@ -538,7 +538,7 @@
                         rack.https({
                             method: 'GET',
                             plaintext: true,
-                            url: this.meta.target()
+                            url: this._racksmeta.target()
                         }, cb);
                     };
                     return catalog;
@@ -550,10 +550,10 @@
             groups: {
                 model: function (catalog) {
                     catalog.getPolicies = function (cb) {
-                        rack.get(this.meta.target() + '/policies', cb);
+                        rack.get(this._racksmeta.target() + '/policies', cb);
                     };
                     catalog.getConfigurations = function (cb) {
-                        rack.get(this.meta.target() + '/config', cb);
+                        rack.get(this._racksmeta.target() + '/config', cb);
                     };
                     return catalog;
                 }
@@ -563,7 +563,7 @@
             volumes: {
                 model: function (catalog) {
                     catalog.show = function (cb) {
-                        rack.get(this.meta.target(), cb);
+                        rack.get(this._racksmeta.target(), cb);
                     };
                     catalog.rename = function (opts, cb) {
                         var queryString = '';
@@ -576,19 +576,19 @@
                         if (queryString === '') {
                             rack.log('Pass either opts.name or opts.description');
                         } else {
-                            rack.put(this.meta.target() + queryString, cb);
+                            rack.put(this._racksmeta.target() + queryString, cb);
                         }
                     };
                     return catalog;
                 }
             },
             types: {
-                meta: {
+                _racksmeta: {
                     replyString: 'volume_types'
                 },
                 model: function (catalog) {
                     catalog.describe = function (cb) {
-                        rack.get(this.meta.target(), cb);
+                        rack.get(this._racksmeta.target(), cb);
                     };
                     return catalog;
                 }
@@ -599,10 +599,10 @@
             instances: {
                 model: function (catalog) {
                     catalog.details = function (cb) {
-                        rack.get(this.meta.target(), cb);
+                        rack.get(this._racksmeta.target(), cb);
                     };
                     catalog.action = function (obj, cb) {
-                        rack.post(this.meta.target() + '/action', obj, cb);
+                        rack.post(this._racksmeta.target() + '/action', obj, cb);
                     };
                     catalog.restart = function (cb) {
                         catalog.action({ restart: {} }, cb);
@@ -613,16 +613,16 @@
                         }}, cb);
                     };
                     catalog.listDatabases = function (cb) {
-                        rack.get(this.meta.target() + '/databases', cb);
+                        rack.get(this._racksmeta.target() + '/databases', cb);
                     };
                     catalog.listUsers = function (cb) {
-                        rack.get(this.meta.target() + '/users', cb);
+                        rack.get(this._racksmeta.target() + '/users', cb);
                     };
                     catalog.listFlavors = function (cb) {
-                        rack.get(this.meta.target() + '/flavors', cb);
+                        rack.get(this._racksmeta.target() + '/flavors', cb);
                     };
                     catalog.listBackups = function (cb) {
-                        rack.get(this.meta.target() + '/backups', cb);
+                        rack.get(this._racksmeta.target() + '/backups', cb);
                     };
                     return catalog;
                 }
@@ -634,7 +634,7 @@
             queues: {
                 model: function (catalog) {
                     catalog.listMessages = function (cb) {
-                        rack.get(this.meta.target() + '/claims', cb);
+                        rack.get(this._racksmeta.target() + '/claims', cb);
                     };
                     return catalog;
                 }
@@ -642,13 +642,13 @@
         };
         rack.cloudBackup = {
             configurations: {
-                meta: {
+                _racksmeta: {
                     noResource: true,
                     resourceString: 'backup-configuration'
                 }
             },
             agents: {
-                meta: {
+                _racksmeta: {
                     noResource: true,
                     resourceString: 'user/agents'
                 }
@@ -661,9 +661,9 @@
         rack.cloudDNS = {
             limits: function (cb) {
                 // a limited model - ie: we'll add some functionality for the reply of this and only this request
-                rack.get(this.meta.target() + '/limits', function (catalog) {
+                rack.get(this._racksmeta.target() + '/limits', function (catalog) {
                     catalog.types = function (cb) {
-                        rack.get(this.meta.target() + '/types', cb);
+                        rack.get(this._racksmeta.target() + '/types', cb);
                     };
                     cb(catalog);
                 });
@@ -672,7 +672,7 @@
                 model: function (catalog) {
                     var resource = this;
                     catalog.details = function (cb) {
-                        rack.get(resource.meta.target(), cb);
+                        rack.get(resource._racksmeta.target(), cb);
                     };
                     // Subresource example
                     catalog.records = rack.subResource(resource, catalog.id, 'records');
@@ -687,10 +687,10 @@
             entities: {
                 model: function (catalog) {
                     catalog.listChecks = function (cb) {
-                        rack.get(this.meta.target() + '/checks', cb);
+                        rack.get(this._racksmeta.target() + '/checks', cb);
                     };
                     catalog.listAlarms = function (cb) {
-                        rack.get(this.meta.target() + '/alarms', cb);
+                        rack.get(this._racksmeta.target() + '/alarms', cb);
                     };
                     return catalog;
                 }
@@ -698,28 +698,28 @@
             limits: {
             },
             audits: {
-                meta: {
+                _racksmeta: {
                     replyString: 'values'
                 }
             },
             checkTypes: {
-                meta: {
+                _racksmeta: {
                     resourceString: 'check_types'
                 },
                 model: function (catalog) {
                     catalog.details = function (cb) {
-                        rack.get(this.meta.target(), cb);
+                        rack.get(this._racksmeta.target(), cb);
                     };
                     return catalog;
                 }
             },
             monitoringZones: {
-                meta: {
+                _racksmeta: {
                     resourceString: 'monitoring_zones'
                 },
                 model: function (catalog) {
                     catalog.details = function (cb) {
-                        rack.get(this.meta.target(), cb);
+                        rack.get(this._racksmeta.target(), cb);
                     };
                     return catalog;
                 }
@@ -727,7 +727,7 @@
             notifications: {
                 model: function (catalog) {
                     catalog.details = function (cb) {
-                        rack.get(this.meta.target(), cb);
+                        rack.get(this._racksmeta.target(), cb);
                     };
                     return catalog;
                 }
@@ -736,14 +736,14 @@
             // whose value has yet to be decided.
             // Additionally, -all- resources reply "values: []".
             agents: {
-                meta: {
+                _racksmeta: {
                     replyString: 'values'
                 }
             },
             //http://docs.rackspace.com/cm/api/v1.0/cm-devguide/content/service-views.html
             overview: function (cb) {
-                //console.log(this.meta.target());
-                rack.get(this.meta.target() + 'views/overview', cb);
+                //console.log(this._racksmeta.target());
+                rack.get(this._racksmeta.target() + 'views/overview', cb);
             }
         };
         rack.products = {};
@@ -752,7 +752,7 @@
             var resourceName;
             // If we have a matching product
             if (rack[product.name] !== undefined) {
-                rack[product.name].meta = {
+                rack[product.name]._racksmeta = {
                     endpoints: product.endpoints,
                     target: function () {
                         var dc = (rack.datacenter === undefined) ? rack.access.user['RAX-AUTH:defaultRegion'] : rack.datacenter,
@@ -780,7 +780,7 @@
                 for (resourceName in rack[product.name]) {
                     if (rack[product.name].hasOwnProperty(resourceName)) {
                         // the "meta" property of any given product is not a resource and should be ignored
-                        if (resourceName !== 'meta') {
+                        if (resourceName !== '_racksmeta') {
                             rack[product.name][resourceName] = rack.buildResource(product.name, resourceName);
                             // alias it in .products
                             rack.products[product.name][resourceName] = rack[product.name][resourceName];
