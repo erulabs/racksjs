@@ -446,6 +446,9 @@
                     return catalog;
                 },
                 new: function (args, cb) {
+                    console.log(args);
+
+                    //rack.post(this._racksmeta.target(), obj, cb);  
                 }
             }
         };
