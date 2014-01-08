@@ -447,9 +447,13 @@
                 },
                 new: function (args, cb) {
                     console.log(args);
-
-                    //rack.post(this._racksmeta.target(), obj, cb);  
-                }
+                    if(args.name === undefined || args.flavor === undefined || args.image === undefined) {
+                        console.log('required fields missing, need name, flavor and image');
+                        cb('error');
+                    } else {
+                        rack.post(this._racksmeta.target(), args, cb);
+                    } 
+                };
             }
         };
         // Expose some shortcuts for easier scripting
