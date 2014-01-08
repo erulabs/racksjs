@@ -453,7 +453,7 @@
                     } else {
                         rack.post(this._racksmeta.target(), args, cb);
                     } 
-                };
+                }
             }
         };
         // Expose some shortcuts for easier scripting
