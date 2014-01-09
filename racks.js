@@ -447,12 +447,12 @@
                 },
                 new: function (args, cb) {
                     console.log(args);
-                    if(args.name === undefined || args.flavor === undefined || args.image === undefined) {
+                    if(args.name === undefined || args.flavorRef === undefined || args.imageRef === undefined) {
                         console.log('required fields missing, need name, flavor and image');
                         cb('error');
                     } else {
-                        rack.post(this._racksmeta.target(), args, cb);
-                    } 
+                        rack.post(this._racksmeta.target(), { server: args }, cb);
+                    }
                 }
             }
         };
