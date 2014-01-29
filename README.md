@@ -14,7 +14,6 @@ Proper documentation and a lot more examples are soon to come - we're still miss
         username: 'Rackspace cloud username',
         apiKey: 'Rackspace cloud API KEY',
         verbosity: 1, // 0 - 5, 0 is no output, 1 is script only (rs.log), 5 is debug.
-        cache: true // Defaults to false - cache authentication in file
     }, function (rs) {
         // Log the error and stop if we fail to authenticate
         if (rs.error) return rs.log(rs.error);
@@ -35,11 +34,26 @@ Proper documentation and a lot more examples are soon to come - we're still miss
         // check tests/generic.js
         //
         //
-        /* // shorthand for: RacksJS.cloudFiles.containers.all()
+        // shorthand for: RacksJS.cloudFiles.containers.all()
         rs.cf.all(function (containers){ 
             rs.log(containers);
         });
-        */
+        // Do something to every OpenStack (NextGen) server
+        // Keep in mind, rs.cloudServersOpenStack.servers is the same as rs.servers (it's the full product -> resource!)
+        rs.cloudServersOpenStack.servers.all(function(servers){
+            servers.forEach(function (server) {
+                // These very closely match: http://docs.rackspace.com/servers/api/v2/cs-devguide/content/Servers-d1e2073.html
+                server.updateMetadata ...
+                server.reboot ...
+                // Method names are aimed at matching the documentation exactly: http://docs.rackspace.com/servers/api/v2/cs-devguide/content/List_Addresses-d1e3014.html
+                server.addresses ...
+            });
+        });
+        // Many other resources live in various products. For instance:
+        rs.cloudServersOpenStack.images.all(function (images) {});
+        // When in doubt about the naming convention, the rackspace API documentation ought to help,
+        // However, RackJS is incomplete. I recommend checking out our product catalog in racks.js:
+        // RacksJS.prototype.buildCatalog() contains all product and resource information
     });
 
 ### Important info
