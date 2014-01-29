@@ -430,17 +430,25 @@
                             type: type
                         }}, cb);
                     };
-                    //catalog.updateMetadata = function (metadata, cb) {
-                    //    rack.post(this._racksmeta.target() + '/metadata', {
-                    //        metadata: metadata
-                    //    }, cb);
-                    //};
-                    //catalog.listMetadata = function (cb) {
-                    //    rack.get(this._racksmeta.target() + '/metadata', cb);
-                    //};
-                    catalog.metadata = rack.subResource(this, catalog.id, 'metadata');
+                    catalog.createImage = function (options, cb) {
+                        if (options.name === undefined) {
+                            return racks.log(undefined, "createImage options - 'name' is a required field");
+                        }
+                        catalog.action({ createImage: options }, cb);
+                    };
+                    catalog.updateMetadata = function (metadata, cb) {
+                        rack.post(this._racksmeta.target() + '/metadata', {
+                            metadata: metadata
+                        }, cb);
+                    };
+                    catalog.listMetadata = function (cb) {
+                        rack.get(this._racksmeta.target() + '/metadata', cb);
+                    };
+                    //catalog.metadata = rack.subResource(this, catalog.id, 'metadata');
                     catalog.listVirtualInterfaces = function (cb) {
-                        rack.get(this._racksmeta.target() + '/os-virtual-interfacesv2', cb);
+                        rack.get(this._racksmeta.target() + '/os-virtual-interfacesv2', function (reply) {
+                            cb(reply.virtual_interfaces);
+                        });
                     };
                     catalog.vips = catalog.listVirtualInterfaces;
                     return catalog;
@@ -449,6 +457,30 @@
                     console.log(args);
 
                     //rack.post(this._racksmeta.target(), obj, cb);  
+                }
+            }
+        };
+        rack.cloudServers = {
+            servers: {
+                model: function (catalog) {
+                    catalog.addresses = function (cb) {
+                        rack.get(this._racksmeta.target() + '/ips', cb);
+                    };
+                    return catalog;
+                }
+            },
+            createImage: function (options, cb) {
+                if (options.name === undefined) {
+                    return racks.log(undefined, "createImage options - 'name' is a required field");
+                }
+                if (options.serverId === undefined) {
+                    return racks.log(undefined, "createImage options - 'serverId' is a required field");
+                }
+                rack.post(this._racksmeta.target() + 'images', { "image": options}, cb);
+            },
+            images: {
+                model: function (catalog) {
+
                 }
             }
         };
@@ -535,6 +567,7 @@
                 },
                 model: function (containerName) {
                     var catalog = {
+                        name: containerName,
                         _racksmeta: {
                             name: containerName
                         }
@@ -660,8 +693,6 @@
             }
         };
         rack.cloudImages = {
-        };
-        rack.cloudServers = {
         };
         rack.cloudDNS = {
             limits: function (cb) {
