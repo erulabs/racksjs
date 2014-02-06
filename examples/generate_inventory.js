@@ -16,24 +16,32 @@ new (require('../racks.js'))({
 			});
 		},
 		// todo: configurable via cli option
-		outformat = 'salt',
-		target = 'public', // Must be one of "public" or "private"
+		outformat = 'sshpass',
+		target = 'private', // Must be one of "public" or "private"
 		user = 'rack',
 		o = console.log,
 		outputters = {
+			// Generates a salt roster - move the output to /etc/salt/master and away you go!
 			'salt': function (server) {
 				o(server.name + ":");
 				o('  host:', server.ip);
 				o('  user:', user);
-				o('  passwd:', server.passwd);
+				o('  passwd:', '"'+server.passwd+'"');
 				o("  sudo: True\n");
+			},
+			// For raw SSH - requires you install "sshpass" on the calling server. Good for very old stuff.
+			'sshpass': function (server) {
+				var reply = 'sshpass -p\''+server.passwd+'\' ';
+				reply = reply + 'ssh -o StrictHostKeyChecking=no ';
+				reply = reply + user + '@' + server.ip
+				reply = reply + ' -t "echo \'$1\'"'
+				o(reply);
 			}
-		};
+ 		};
 
 	rs.cloudServers.servers.all(function (firstGenServers) {
 		rs.cloudServersOpenStack.servers.all(function(nextGenServers){
-			//var servers = firstGenServers.concat(nextGenServers);
-			var servers = nextGenServers;
+			var servers = firstGenServers.concat(nextGenServers);
 			servers.forEach(function (server) {
 				server.addresses(function (reply) {
 					reply.addresses[target].forEach(function (addr) {
