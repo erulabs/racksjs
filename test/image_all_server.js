@@ -8,56 +8,38 @@ new (require('../racks.js'))({
 	// Log the error and stop if we fail to authenticate
 	if (rs.error) return rs.log(rs.error);
 
-	var date = 'jan-01-2014'
-	rs.cloudServers.servers.all(function (servers) {
-		servers.forEach(function (server) {
-			server.addresses(function (reply) {
-				var imageName = date + ' ' + server.name + ' ' + reply.addresses.public[0];
-				console.log('creating image,', imageName, 'for server id:', server.id);
-				rs.cloudServers.createImage({
-					name: imageName,
-					serverId: server.id
-				}, function (reply) {
-					console.log(reply);
-				});
-			});
-		});
-	});
-	//rs.cloudServers.servers.all(function (firstGenServers) {
-	//	rs.cloudServersOpenStack.servers.all(function(nextGenServers){
-	//		var servers = firstGenServers.concat(nextGenServers);
-	//		servers.forEach(function (server) {
-	//			server.addresses(function (reply) {
-	//				reply.addresses.public.forEach(function (addr) {
-	//					if (typeof addr === "string") {
-	//						var imageName = [ date, server.name, addr ];
-	//					} else {
-	//						if (addr.version === 4) {
-	//							var imageName = [ date, server.name, addr.addr ]
-	//						}
-	//					}
-	//					if (imageName !== undefined) {
-	//						imageName = imageName.join(' ');
-	//						if (typeof server.createImage === "function") {
-	//							console.log('starting nextGen image: ', imageName, server.id);
-	//							server.createImage({
-	//								name: imageName,
-	//							}, function (reply) {
-	//								console.log('create image reply:', reply);
-	//							});
-	//						} else {
-	//							console.log('starting firstGen image: ', imageName, server.id);
-	//							rs.cloudServers.createImage({
-	//								name: imageName,
-	//								serverId: server.id
-	//							}, function (reply) {
-	//								console.log('create image reply:', reply);
-	//							});
-	//						}
-	//					}
-	//				});
+	//var date = 'jan-01-2014'
+	//rs.cloudServers.servers.all(function (servers) {
+	//	servers.forEach(function (server) {
+	//		server.addresses(function (reply) {
+	//			var imageName = date + ' ' + server.name + ' ' + reply.addresses.public[0];
+	//			console.log('creating image,', imageName, 'for server id:', server.id);
+	//			rs.cloudServers.createImage({
+	//				name: imageName,
+	//				serverId: server.id
+	//			}, function (reply) {
+	//				console.log(reply);
 	//			});
 	//		});
 	//	});
 	//});
+	rs.cloudServers.servers.all(function (firstGenServers) {
+		rs.cloudServersOpenStack.servers.all(function(nextGenServers){
+			var servers = firstGenServers.concat(nextGenServers);
+			servers.forEach(function (server) {
+				server.addresses(function (reply) {
+					reply.addresses.public.forEach(function (addr) {
+						if (typeof addr === "string") {
+							var ip = addr;
+						} else {
+							if (addr.version === 4) {
+								var ip = addr.addr;
+							}
+						}
+						console.log(server.name, "\t\tansible_ssh_host="+ip, "\tansible_ssh_user=rack\tansible_ssh_pass=");
+					});
+				});
+			});
+		});
+	});
 });

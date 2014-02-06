@@ -8,9 +8,9 @@ new (require('../racks.js'))({
 	// Log the error and stop if we fail to authenticate
 	if (rs.error) return rs.log(rs.error);
 
-	rs.cloudServersOpenStack.servers.all(function(servers){
+	/*rs.cloudServersOpenStack.servers.all(function(servers){
 		servers.forEach(function (server) {
-			if (server.id === "SOME SERVER ID") {
+			if (server.id === "") {
 				server.updateMetadata({
 					rax_service_level_automation: 'Complete'
 				}, function (reply) {
@@ -21,12 +21,10 @@ new (require('../racks.js'))({
 				});
 			}
 		});
-	});
-
-
+	});*/
 	//rs.cloudDatabases.instances.all(function (all) {
 	//	all.forEach(function (db) {
-	//		if (db.id == '666d3dd6-8db1-40ed-a8c0-c7ce5628e379') {
+	//		if (db.id == '') {
 	//			db.details(function (details) {
 	//				console.log(details);
 	//			});
@@ -36,7 +34,7 @@ new (require('../racks.js'))({
 	//rs.cloudServersOpenStack.servers.all(function(servers){
 	//	console.log(servers);
 	//	servers.forEach(function (server) {
-	//		if (server.name === "SBE_PROD") {
+	//		if (server.name === "") {
 	//			server.updateMetadata({
 	//				rax_service_level_automation: 'Complete'
 	//			}, function (reply) {
@@ -66,7 +64,7 @@ new (require('../racks.js'))({
 	//rs.datacenter = 'DFW'
 	//rs.cloudLoadBalancers.loadBalancers.all(function (reply) {
 	//	reply.forEach(function (lb) {
-	//		if (lb.name === 'ut-api-lb-https-01') {
+	//		if (lb.name === '') {
 	//			lb.details(function (reply) {
 	//				console.log(reply);
 	//			});
