@@ -8,6 +8,11 @@ new (require('../racks.js'))({
 	// Log the error and stop if we fail to authenticate
 	if (rs.error) return rs.log(rs.error);
 
+
+	rs.cloudServers.flavors.all(function(reply){
+		console.log(reply);
+	});
+
 	/*rs.cloudServersOpenStack.servers.all(function(servers){
 		servers.forEach(function (server) {
 			if (server.id === "") {

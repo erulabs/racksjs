@@ -8,15 +8,14 @@ new (require('../racks.js'))({
 	if (rs.error) return rs.log(rs.error);
 	var sys = require('sys'),
 		exec = require('child_process').exec,
-		// Assume ~/.cloud_control_cookies (http://theracker.turnbasedaction.com/cloud/c)
-		// THIS IS RACKER ONLY FUNCTIONALITY, AND AS SUCH WILL NEVER WORK FOR NONRACKERS
+		// Assume ~/.cloud_control_cookies
 		getPassword = function (servertype, serverid, callback) {
 			exec("curl --insecure -i -L -s -b ~/.cloud_control_cookies http://us.cloudcontrol.rackspacecloud.com/customer/"+rs.access.token.tenant.id+"/users/"+rs.access.user.id+"/"+servertype+"/"+serverid+"/managed_admin_passwords | grep 'admin_password' | awk -F'\"' '{print $4}';", function (error, stdout, stderr) {
 				callback(stdout.replace(/(\r\n|\n|\r)/gm,""));
 			});
 		},
 		// todo: configurable via cli option
-		outformat = 'sshpass',
+		outformat = 'salt',
 		target = 'private', // Must be one of "public" or "private"
 		user = 'rack',
 		o = console.log,

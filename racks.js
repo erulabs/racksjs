@@ -485,8 +485,15 @@
             images: {
                 model: function (catalog) {
 
+			return catalog;
                 }
-            }
+            },
+	    flavors: {
+	    	model: function (catalog) {
+
+			return catalog;
+		}
+	    }
         };
         // Expose some shortcuts for easier scripting
         rack.servers = rack.cloudServersOpenStack.servers;
