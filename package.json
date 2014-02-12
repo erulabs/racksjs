@@ -1,0 +1,30 @@
+{
+  "name": "racksjs",
+  "description": "a javascript SDK for the Rackspace Cloud",
+  "author": "Seandon Mooy",
+  "email": "seandon.mooy@gmail.com",
+  "contributors": [ "Matt Ellsworth" ],
+  "version": "0.2.0",
+  "main": "./lib/racks.js",
+  "keywords": [
+    "rackspace",
+    "cloud sdk"
+  ],
+  "dependencies": {
+    "commander": "latest"
+  },
+  "engines": {
+    "node": ">=0.10"
+  },
+  "homepage": "https://github.com/erulabs/racksjs",
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:erulabs/racksjs.git"
+  },
+  "devDependencies": {
+    "mocha": "latest",
+  },
+  "scripts": {
+    "test": "make test-all"
+  }
+}
