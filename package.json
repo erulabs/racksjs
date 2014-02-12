@@ -22,7 +22,7 @@
     "url": "git@github.com:erulabs/racksjs.git"
   },
   "devDependencies": {
-    "mocha": "latest",
+    "mocha": ">=1.17"
   },
   "scripts": {
     "test": "make test-all"
