@@ -1,7 +1,0 @@
-language: node_js
-node_js:
-- 0.1
-env:
-  matrix:
-  - secure: QJHDSYCuAXxpz9ItFu1nF4jVXv+j0QYuXWulZ3xuk9u83iZTFa1+PNDw4JR9elnHF3xlmQccLiMX75Zj/JiGE5rrDWJzsua3n1rXN8RR2iJTs6yOSdKgkiYuMt12iT7MkOMgRMJXH7ssuqbjw3M8gKJNSoQFsDiKYXJod0b7isk=
-  - secure: E8LAuT5UIvmFg8o/QG7v7/60B+L0DK8EI+iM+cbS+e5panWlPVY33i/XJuVwbbH8D6ELGPU9mppx7wwnFlMwlk5eb8j4wIHCJPip3uGXey6d5VXFL6uSO3rrp0YZ4IYyKESECqSIQgA8mTM7eIYM1LlmDdq7hxlr4KKrDAoEAOQ=

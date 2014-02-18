@@ -102,7 +102,7 @@ module.exports = class RacksJS
 			resource: template._racksmeta.name
 			product: template._racksmeta.product
 			target: () =>
-				target = template.target()
+				target = template._racksmeta.target()
 				idOrName = ''
 				if target.substr(-1) is '/' then target = target.substr(0, target.length - 1)
 				if model.id?
@@ -113,7 +113,7 @@ module.exports = class RacksJS
 		return model
 	resourceRequest: (resource, callback) ->
 		@https {
-			url: resource._racksmeta.target() 
+			url: resource._racksmeta.target()
 			plaintext: resource._racksmeta.plaintext
 			method: 'GET'
 		}, (reply) =>
@@ -123,6 +123,7 @@ module.exports = class RacksJS
 			# respond with { servers: [ {}, {}, {} ... ] }
 			# which is exactly what we want - all we do is strip the outer { servers: } object
 			# and pass the array that was requested
+			console.log reply
 			if reply[metaName]?
 				if resource.model
 					# If we got back an array, loop thru the reply objects and "buildProduct"
@@ -163,10 +164,9 @@ module.exports = class RacksJS
 			resource.all = (callback) =>
 				@resourceRequest resource, callback
 			resource.assume = (obj, callback) =>
-				if !obj.id? or !obj.name?
-					@log '[INFO] .assume() relies on .target() which in turn requires either .id or .name on the model - please define one or the other'
-				else
-					callback @buildModel(resource, obj)
+				if typeof obj is 'string' then obj = { id: obj }
+				if !obj.id? and !obj.name? then return @log '[INFO] .assume() relies on .target() which in turn requires the object argument to have a .id or .name - please define one or the other - alternatively you can pass a string, in which case skinny will assume youre providing an id'
+				@buildModel(resource, obj)
 		return resource
 	buildCatalog: (serviceCatalog) ->
 		rack = @
@@ -195,7 +195,7 @@ module.exports = class RacksJS
 				# shortcut/script style -> formal/normal style used in documentation -> full path
 				# rs.servers -> rs.cloudServersOpenStack.servers -> rs.products.cloudServersOpenStack.servers
 				@products[product.name] = {}
-				for resourceName in @[product.name]
+				for resourceName, resource of @[product.name]
 					if @[product.name].hasOwnProperty resourceName
 						if resourceName isnt '_racksmeta'
 							@[product.name][resourceName] = @buildResource product.name, resourceName
@@ -229,15 +229,43 @@ module.exports = class RacksJS
 				_racksmeta:
 					resourceString: 'os-networksv2'
 				model: (raw) ->
+					raw.show = (callback) ->
+						if raw.label in [ 'public', 'private' ]
+							callback({
+								network:
+									id: raw.id
+									label: raw.label
+									cidr: undefined
+							})
+						else
+							rack.get @_racksmeta.target(), callback
 					return raw
 			flavors:
 				model: (raw) ->
+					raw.details = (callback) -> rack.get @_racksmeta.target(), callback
 					return raw
 			images:
 				model: (raw) ->
+					raw.details = (callback) -> rack.get @_racksmeta.target(), callback
 					return raw
 			servers:
+				_racksmeta:
+					requiredFields:
+						name: 'string'
+						imageRef: 'string'
+						flavorRef: 'string'
 				model: (raw) ->
+					raw.details = (callback) -> rack.get @_racksmeta.target(), (reply) -> callback(reply.server)
+					raw.addresses = (callback) -> rack.get @_racksmeta.target() + '/ips', callback
+					raw.delete = (callback) -> rack.delete @_racksmeta.target(), callback
+					raw.action = (obj, callback) -> rack.post @_racksmeta.target() + '/action', obj, callback
+					raw.reboot = (type, callback) ->
+						if typeof type is 'function' then cb = type; type = 'SOFT'
+						raw.action { reboot: { type: type } }, callback
+					#raw.createImage = (options, callback) -> raw.action
+					raw.resize = (options, callback) ->
+						if typeof options == 'string' then options = { "flavorRef": options }
+						raw.action { resize: options }, callback
 					return raw
 		# http://docs.rackspace.com/servers/api/v1.0/cs-devguide/content/API_Operations-d1e1720.html
 		@cloudServers =
