@@ -123,7 +123,6 @@ module.exports = class RacksJS
 			# respond with { servers: [ {}, {}, {} ... ] }
 			# which is exactly what we want - all we do is strip the outer { servers: } object
 			# and pass the array that was requested
-			console.log reply
 			if reply[metaName]?
 				if resource.model
 					# If we got back an array, loop thru the reply objects and "buildProduct"
@@ -155,6 +154,11 @@ module.exports = class RacksJS
 		if subResource? then resource = subResource else resource = @[productName][resourceName]
 		if !resource._racksmeta? then resource._racksmeta = {}
 		if !resource._racksmeta.name? then resource._racksmeta.name = resourceName
+		if !resource._racksmeta.singular?
+			if resource._racksmeta.name.substr(-1) is 's'
+				resource._racksmeta.singular = resource._racksmeta.name.substr(0, resource._racksmeta.name.length-1)
+			else
+				resource._racksmeta.singular = resource._racksmeta.name
 		resource._racksmeta.product = productName
 		rack = @
 		if !resource._racksmeta.target? then resource._racksmeta.target = () ->
@@ -167,6 +171,19 @@ module.exports = class RacksJS
 				if typeof obj is 'string' then obj = { id: obj }
 				if !obj.id? and !obj.name? then return @log '[INFO] .assume() relies on .target() which in turn requires the object argument to have a .id or .name - please define one or the other - alternatively you can pass a string, in which case skinny will assume youre providing an id'
 				@buildModel(resource, obj)
+			resource.new = (obj, callback) =>
+				data = {}
+				data[resource._racksmeta.singular] = obj
+				replyString = resource._racksmeta.name
+				if resource._racksmeta.replyString? then replyString = resource._racksmeta.replyString
+				rack.post resource._racksmeta.target(), data, (reply) =>
+					if reply[replyString]?
+						obj = reply[replyString]
+					else if reply[resource._racksmeta.singular]?
+						obj = reply[resource._racksmeta.singular]
+					else
+						return callback(reply)
+					callback(rack.buildModel(resource, obj))
 		return resource
 	buildCatalog: (serviceCatalog) ->
 		rack = @
@@ -266,6 +283,8 @@ module.exports = class RacksJS
 					raw.resize = (options, callback) ->
 						if typeof options == 'string' then options = { "flavorRef": options }
 						raw.action { resize: options }, callback
+					raw.rebuild = (options, callback) ->
+						raw.action { rebuild: options }, callback
 					return raw
 		# http://docs.rackspace.com/servers/api/v1.0/cs-devguide/content/API_Operations-d1e1720.html
 		@cloudServers =
