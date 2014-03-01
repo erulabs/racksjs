@@ -9,10 +9,21 @@
     apiKey: process.argv[3],
     verbosity: 0
   }, function(rs) {
-    return rs.servers.all(function(reply) {
-      return reply[0].details(function(details) {
-        return console.log(details);
+    rs.nextgen.servers["new"]({
+      'name': 'racksjs_test',
+      'flavorRef': 'performance1-1',
+      'imageRef': 'f70ed7c7-b42e-4d77-83d8-40fa29825b85'
+    }, function(server) {
+      return server.systemActive(function(details) {
+        console.log('server object:', server, 'server details', details);
+        return server["delete"]();
       });
+    });
+    return rs.servers.assume('8347e953-c865-4742-b0a8-96f2903a89cf').rebuild({
+      imageRef: '1eb491c1-c5fb-4b34-be53-196a0c0588ba',
+      flavorRef: '5'
+    }, function(reply) {
+      return console.log(reply);
     });
   });
 

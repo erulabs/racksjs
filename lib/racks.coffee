@@ -74,7 +74,7 @@ module.exports = class RacksJS
 	get: (url, callback) -> @https { method: 'GET', url: url }, callback
 	post: (url, data, callback) -> @https { method: 'POST', url: url, data: data }, callback
 	delete: (url, callback) -> @https { method: 'DELETE', url: url }, callback
-	put: (url, callback) -> @https { method: 'PUT', url: url }, callback
+	put: (url, data, callback) -> @https { method: 'PUT', url: url, data: data }, callback
 	authenticate: (authObj, callback) ->
 		if !authObj.username? or !authObj.apiKey? then return callback { error: 'No username or apiKey provided to .authenticate()' }
 		@post authObj.endpoint + '/tokens', {
@@ -167,15 +167,17 @@ module.exports = class RacksJS
 		unless resource._racksmeta.noResource
 			resource.all = (callback) =>
 				@resourceRequest resource, callback
-			resource.assume = (obj, callback) =>
+			resource.assume = (obj) =>
 				if typeof obj is 'string' then obj = { id: obj }
 				if !obj.id? and !obj.name? then return @log '[INFO] .assume() relies on .target() which in turn requires the object argument to have a .id or .name - please define one or the other - alternatively you can pass a string, in which case skinny will assume youre providing an id'
 				@buildModel(resource, obj)
 			resource.new = (obj, callback) =>
 				data = {}
 				data[resource._racksmeta.singular] = obj
-				replyString = resource._racksmeta.name
-				if resource._racksmeta.replyString? then replyString = resource._racksmeta.replyString
+				if resource._racksmeta.replyString?
+					replyString = resource._racksmeta.replyString
+				else
+					replyString = resource._racksmeta.name
 				rack.post resource._racksmeta.target(), data, (reply) =>
 					if reply[replyString]?
 						obj = reply[replyString]
@@ -183,7 +185,8 @@ module.exports = class RacksJS
 						obj = reply[resource._racksmeta.singular]
 					else
 						return callback(reply)
-					callback(rack.buildModel(resource, obj))
+					if callback?
+						callback(rack.buildModel(resource, obj))
 		return resource
 	buildCatalog: (serviceCatalog) ->
 		rack = @
@@ -260,10 +263,12 @@ module.exports = class RacksJS
 			flavors:
 				model: (raw) ->
 					raw.details = (callback) -> rack.get @_racksmeta.target(), callback
+					raw.specs = (callback) -> rack.get @_racksmeta.target() + '/os-extra_specs', callback
 					return raw
 			images:
 				model: (raw) ->
 					raw.details = (callback) -> rack.get @_racksmeta.target(), callback
+					raw.delete = (callback) -> rack.delete @_racksmeta.target(), callback
 					return raw
 			servers:
 				_racksmeta:
@@ -272,19 +277,81 @@ module.exports = class RacksJS
 						imageRef: 'string'
 						flavorRef: 'string'
 				model: (raw) ->
-					raw.details = (callback) -> rack.get @_racksmeta.target(), (reply) -> callback(reply.server)
-					raw.addresses = (callback) -> rack.get @_racksmeta.target() + '/ips', callback
-					raw.delete = (callback) -> rack.delete @_racksmeta.target(), callback
-					raw.action = (obj, callback) -> rack.post @_racksmeta.target() + '/action', obj, callback
+					raw.systemActive = (interval, callback) ->
+						if typeof interval is 'function'
+							callback = interval
+							interval = 15 * 1000
+						action = () =>
+							raw.details (reply) ->
+								if reply.status isnt "ACTIVE"
+									recurse()
+								else
+									callback(reply)
+						recurse = () => setTimeout(action, interval)
+						recurse()
+					raw.details = (callback) ->
+						rack.get @_racksmeta.target(), (reply) -> callback(reply.server)
+					raw.addresses = (callback) ->
+						rack.get @_racksmeta.target() + '/ips', callback
+					raw.delete = (callback) ->
+						rack.delete @_racksmeta.target(), callback
+					raw.update = (options, callback) ->
+						if !options.server? then options = { "server": options }
+						rack.put @_racksmeta.target(), options, callback
+					raw.action = (options, callback) ->
+						rack.post @_racksmeta.target() + '/action', options, callback
 					raw.reboot = (type, callback) ->
 						if typeof type is 'function' then cb = type; type = 'SOFT'
 						raw.action { reboot: { type: type } }, callback
-					#raw.createImage = (options, callback) -> raw.action
+					raw.rescue = (callback) ->
+						raw.action { rescue: null }, callback
+					raw.unrescue = (callback) ->
+						raw.action { unrescue: null }, callback
+					raw.createImage = (options, callback) ->
+						if typeof options is 'string' then options = { "createImage": { "name": options } }
+						raw.action options, callback
+					raw.serverActions = (callback) ->
+						rack.get @_racksmeta.target() + '/os-instance-actions', callback
+					raw.showServerAction = (id, callback) ->
+						rack.get @_racksmeta.target() + '/os-instance-actions/' + id, callback
 					raw.resize = (options, callback) ->
 						if typeof options == 'string' then options = { "flavorRef": options }
 						raw.action { resize: options }, callback
+					raw.confirmResize = (callback) ->
+						raw.action { confirmResize: null }, callback
+					raw.revertResize = (callback) ->
+						raw.action { revertResize: null }, callback
 					raw.rebuild = (options, callback) ->
 						raw.action { rebuild: options }, callback
+					raw.attachVolume = (options, callback) ->
+						rack.post @_racksmeta.target() + '/os-volume_attachments', options, callback
+					raw.volumes = (callback) ->
+						rack.get @_racksmeta.target() + '/os-volume_attachments', callback
+					raw.volumeDetails = (id, callback) ->
+						rack.get @_racksmeta.target() + '/os-volume_attachments/' + id, callback
+					raw.detachVolume = (callback) ->
+						rack.delete @_racksmeta.target() + '/os-volume_attachments/' + id, callback
+					raw.metadata = (callback) ->
+						rack.get @_racksmeta.target() + '/metadata', callback
+					raw.setMetadata = (options, callback) ->
+						if !options.metadata? then options = { 'metadata': options }
+						rack.put @_racksmeta.target() + '/metadata', options, callback
+					raw.updateMetadata = (options, callback) ->
+						if !options.metadata? then options = { 'metadata': options }
+						rack.post @_racksmeta.target() + '/metadata', options, callback
+					raw.getMetadataItem = (key, callback) ->
+						rack.get @_racksmeta.target() + '/metadata/' + key, callback
+					raw.setMetadataItem = (key, options, callback) ->
+						if !options.metadata? then options = { 'metadata': options }
+						rack.put @_racksmeta.target() + '/metadata/' + key, options, callback
+					raw.deleteMetadataItem = (key, callback) ->
+						rack.delete @_racksmeta.target() + '/metadata/' + key, callback
+					return raw
+			keys:
+				_racksmeta:
+					resourceString: 'os-keypairs'
+				model: (raw) ->
+					raw.delete = (callback) -> rack.delete @_racksmeta.target(), callback
 					return raw
 		# http://docs.rackspace.com/servers/api/v1.0/cs-devguide/content/API_Operations-d1e1720.html
 		@cloudServers =
@@ -331,10 +398,29 @@ module.exports = class RacksJS
 		@cloudBlockStorage =
 			volumes:
 				model: (raw) ->
+					raw.details = (callback) ->
+						rack.get @_racksmeta.target(), callback
+					raw.delete = (callback) ->
+						rack.delete @_racksmeta.target(), callback
+					raw.rename = (options, callback) ->
+						if typeof options is 'string' then options = { "name": options }
+						if !options.volume? then options = { "volume": options }
+						rack.put @_racksmeta.target(), options, callback
+					raw.snapshot = (options, callback) ->
+						if typeof options is 'string' then options = { "snapshot": { "display_name": options } }
+						options.snapshot.volume_id = raw.id
+						rack.post @cloudBlockStorage._racksmeta.target() + '/snapshots', options, callback
 					return raw
+			volumeDetails: (callback) ->
+				rack.get @_racksmeta.target() + '/volumes/detail', callback
 			types:
 				model: (raw) ->
 					return raw
+			snapshots:
+				model: (raw) ->
+					return raw
+			snapshotDetails: (callback) ->
+				rack.get @_racksmeta.target() + '/snapshots/detail', callback
 		# http://docs.rackspace.com/cdb/api/v1.0/cdb-devguide/content/API_Operations-d1e2264.html
 		@cloudDatabases =
 			instances:
@@ -373,9 +459,6 @@ module.exports = class RacksJS
 			entities:
 				model: (raw) ->
 					return raw
-			limits:
-				model: (raw) ->
-					return raw
 			audits:
 				model: (raw) ->
 					return raw
@@ -391,8 +474,23 @@ module.exports = class RacksJS
 			agents:
 				model: (raw) ->
 					return raw
+			notification_plans:
+				model: (raw) ->
+					return raw
 			overview : (callback) ->
-				rack.get @_racksmeta.target() + 'views/overview', callback
+				rack.get @_racksmeta.target() + '/views/overview', callback
+			account: (callback) ->
+				rack.get @_racksmeta.target() + '/account', callback
+			updateAccount: (options, callback) ->
+				rack.put @_racksmeta.target() + '/account', options, callback
+			limits: (callback) ->
+				rack.get @_racksmeta.target() + '/limits', callback
+			usage: (callback) ->
+				rack.get @_racksmeta.target() + '/usage', callback
+			changelogs: (callback) ->
+				rack.get @_racksmeta.target() + '/changelogs/alarms', callback
+
+
 		# Shortcuts:
 		@servers = @cloudServersOpenStack.servers
 		@networks = @cloudServersOpenStack.networks
