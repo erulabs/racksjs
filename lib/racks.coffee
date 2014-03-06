@@ -300,6 +300,8 @@ module.exports = class RacksJS
 						rack.put @_racksmeta.target(), options, callback
 					raw.action = (options, callback) ->
 						rack.post @_racksmeta.target() + '/action', options, callback
+					raw.changePassword = (password, callback) ->
+						raw.action { changePassword: { adminPass: password } }, callback
 					raw.reboot = (type, callback) ->
 						if typeof type is 'function' then cb = type; type = 'SOFT'
 						raw.action { reboot: { type: type } }, callback
