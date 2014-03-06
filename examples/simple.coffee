@@ -32,3 +32,5 @@ new RacksJS {
 		flavorRef: '5'
 	}, (reply) ->
 		console.log reply
+
+	rs.servers.assume('8347e953-c865-4742-b0a8-96f2903a89cf').setMetadata { 'RackConnectPublicIP': '50.56.51.194 }
