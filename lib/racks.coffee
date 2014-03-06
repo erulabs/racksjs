@@ -346,6 +346,11 @@ module.exports = class RacksJS
 						rack.put @_racksmeta.target() + '/metadata/' + key, options, callback
 					raw.deleteMetadataItem = (key, callback) ->
 						rack.delete @_racksmeta.target() + '/metadata/' + key, callback
+					raw.getVips = (callback) ->
+						rack.get @_racksmeta.target() + '/os-virtual-interfacesv2', callback
+					raw.attachNetwork = (options, callback) ->
+						if !options.metadata? then options = { 'virtual_interface': options }
+						rack.post @_racksmeta.target() + '/os-virtual-interfacesv2', options, callback
 					return raw
 			keys:
 				_racksmeta:
