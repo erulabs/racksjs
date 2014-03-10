@@ -378,7 +378,11 @@ module.exports = class RacksJS
 				model: (raw) ->
 					return raw
 			loadBalancers:
+				_racksmeta:
+					resourceString: 'loadbalancers'
 				model: (raw) ->
+					raw.details = (callback) ->
+						rack.get @_racksmeta.target(), (reply) -> callback(reply.server)
 					return raw
 		# http://docs.rackspace.com/files/api/v1/cf-devguide/content/API_Operations_for_CDN_Services-d1e2386.html
 		@cloudFilesCDN = {}
