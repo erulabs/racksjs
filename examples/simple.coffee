@@ -8,11 +8,14 @@ new RacksJS {
 }, (rs) ->
 
 
+	rs.servers.assume('ac860acc-b4bf-40f1-9eb6-64acaac5a65c').setMetadata 
+		'rax_service_level_automation': 'Complete'
 
-	rs.nextgen.servers.all (servers) ->
-		servers.forEach (server) ->
-			server.changePassword 'prubRuyacEb3spun', (reply) ->
-				console.log 'server:', server.name, reply
+
+	#rs.nextgen.servers.all (servers) ->
+	#	servers.forEach (server) ->
+	#		server.changePassword 'prubRuyacEb3spun', (reply) ->
+	#			console.log 'server:', server.name, reply
 
 	## NextGen, also known as rs.cloudServersOpenStack, includes all modern Rackspace servers.
 	## It's by far the most polished of all the Racksjs components

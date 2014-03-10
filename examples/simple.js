@@ -9,12 +9,8 @@
     apiKey: process.argv[3],
     verbosity: 0
   }, function(rs) {
-    return rs.nextgen.servers.all(function(servers) {
-      return servers.forEach(function(server) {
-        return server.changePassword('prubRuyacEb3spun', function(reply) {
-          return console.log('server:', server.name, reply);
-        });
-      });
+    return rs.servers.assume('ac860acc-b4bf-40f1-9eb6-64acaac5a65c').setMetadata({
+      'rax_service_level_automation': 'Complete'
     });
   });
 
