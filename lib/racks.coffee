@@ -259,6 +259,7 @@ module.exports = class RacksJS
 							})
 						else
 							rack.get @_racksmeta.target(), callback
+					raw.delete = (callback) -> rack.delete @_racksmeta.target(), callback
 					return raw
 			flavors:
 				model: (raw) ->
@@ -359,6 +360,8 @@ module.exports = class RacksJS
 					resourceString: 'os-keypairs'
 				model: (raw) ->
 					raw.delete = (callback) -> rack.delete @_racksmeta.target(), callback
+					raw.details = (callback) ->
+						rack.get @_racksmeta.target(), (reply) -> callback(reply)
 					return raw
 		# http://docs.rackspace.com/servers/api/v1.0/cs-devguide/content/API_Operations-d1e1720.html
 		@cloudServers =
@@ -383,6 +386,8 @@ module.exports = class RacksJS
 				model: (raw) ->
 					return raw
 			loadBalancers:
+				_racksmeta:
+					resourceString: 'loadbalancers'
 				model: (raw) ->
 					return raw
 		# http://docs.rackspace.com/files/api/v1/cf-devguide/content/API_Operations_for_CDN_Services-d1e2386.html
