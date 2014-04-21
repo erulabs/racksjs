@@ -5,7 +5,7 @@
   "email": "seandon.mooy@gmail.com",
   "contributors": [ "Matt Ellsworth" ],
   "version": "0.2.0",
-  "main": "./lib/racks.js",
+  "main": "./dist/racks.js",
   "keywords": [
     "rackspace",
     "cloud sdk"
@@ -22,7 +22,12 @@
     "url": "git@github.com:erulabs/racksjs.git"
   },
   "devDependencies": {
-    "mocha": ">=1.17"
+    "mocha": ">=1.17",
+    "gulp": "3.6.1",
+    "gulp-concat": "2.2.0",
+    "gulp-coffee": "1.4.2",
+    "gulp-uglify": "0.2.1",
+    "gulp-rename": "1.2.0"
   },
   "scripts": {
     "test": "make test-all"

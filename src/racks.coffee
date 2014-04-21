@@ -97,6 +97,7 @@ module.exports = class RacksJS
 	# gets appended with a bunch of functionality (whatever is in its .model()), some metadata which is nice for scripting
 	# and most importantly, a target function
 	buildModel: (template, raw) ->
+		rack = @
 		if template.model? then model = template.model raw else return raw
 		model._racksmeta =
 			resource: template._racksmeta.name
@@ -205,6 +206,8 @@ module.exports = class RacksJS
 							target = @endpoints[0]
 						if typeof target is 'object'
 							target = target[rack.network.toLowerCase() + 'URL']
+						if rack.test
+							target = 'https://mockapi.com'
 						if target.substr(-1) isnt '/' then target = target + '/'
 						return target
 				}
@@ -225,22 +228,32 @@ module.exports = class RacksJS
 	# A testing API
 	mockApi: (opts, callback) ->
 		# The authentication call
-		if opts.data? and opts.data.match /apiKeyCredentials/
-			fakeEndpoints = [ 'http://some-fake-testing-url.com', 0, 1, 2 ]
-			return callback({ 
-				access:
-					token:
-						id: 'some-fake-testing-id'
-					serviceCatalog: [{
-						name: 'cloudServersOpenStack',
-						endpoints: fakeEndpoints
-					}]
-			})
-		else 
-			callback([
+		if !opts.data?
+			return callback([
 				{ id: 1 },
 				{ id: 2 }
 			])
+		if opts.data.match /apiKeyCredentials/
+			fakeEndpoints = [ 'http://some-fake-testing-url.com', 0, 1, 2 ]
+			cbObj =
+				access:
+					user:
+						'RAX-AUTH:defaultRegion': 'ORD'
+					token:
+						id: 'some-fake-testing-id'
+					serviceCatalog: []
+			for product in [ 'cloudServersOpenStack', 'cloudServers', 'cloudLoadBalancers', 'cloudFilesCDN', 'cloudFiles', 'cloudBlockStorage', 'cloudDatabases', 'cloudBackup', 'cloudDNS', 'cloudImages', 'cloudMonitoring' ]
+				cbObj.access.serviceCatalog.push {
+					name: product,
+					endpoints: fakeEndpoints
+				}
+			return callback(cbObj)
+		else
+			return callback([
+				{ id: 1 },
+				{ id: 2 }
+			])
+
 	buildProducts: () ->
 		rack = @
 		# http://docs.rackspace.com/servers/api/v2/cs-devguide/content/ch_api_operations.html
@@ -259,6 +272,7 @@ module.exports = class RacksJS
 							})
 						else
 							rack.get @_racksmeta.target(), callback
+					raw.delete = (callback) -> rack.delete @_racksmeta.target(), callback
 					return raw
 			flavors:
 				model: (raw) ->
@@ -360,6 +374,8 @@ module.exports = class RacksJS
 					resourceString: 'os-keypairs'
 				model: (raw) ->
 					raw.delete = (callback) -> rack.delete @_racksmeta.target(), callback
+					raw.details = (callback) ->
+						rack.get @_racksmeta.target(), (reply) -> callback(reply)
 					return raw
 		# http://docs.rackspace.com/servers/api/v1.0/cs-devguide/content/API_Operations-d1e1720.html
 		@cloudServers =
@@ -384,9 +400,8 @@ module.exports = class RacksJS
 				model: (raw) ->
 					return raw
 			loadBalancers:
-				_racksmeta: {
+				_racksmeta:
 					resourceString: 'loadbalancers'
-				}
 				model: (raw) ->
 					raw.details = (callback) ->
 						rack.get @_racksmeta.target(), (reply) -> callback(reply.server)
