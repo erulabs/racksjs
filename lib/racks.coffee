@@ -337,6 +337,7 @@ module.exports = class RacksJS
 						rack.get @_racksmeta.target() + '/metadata', callback
 					raw.setMetadata = (options, callback) ->
 						if !options.metadata? then options = { 'metadata': options }
+						if !callback? then callback = -> return false
 						rack.put @_racksmeta.target() + '/metadata', options, callback
 					raw.updateMetadata = (options, callback) ->
 						if !options.metadata? then options = { 'metadata': options }
@@ -383,7 +384,12 @@ module.exports = class RacksJS
 				model: (raw) ->
 					return raw
 			loadBalancers:
+				_racksmeta: {
+					resourceString: 'loadbalancers'
+				}
 				model: (raw) ->
+					raw.details = (callback) ->
+						rack.get @_racksmeta.target(), (reply) -> callback(reply.server)
 					return raw
 		# http://docs.rackspace.com/files/api/v1/cf-devguide/content/API_Operations_for_CDN_Services-d1e2386.html
 		@cloudFilesCDN = {}
@@ -454,6 +460,9 @@ module.exports = class RacksJS
 				model: (raw) ->
 					return raw
 			domains:
+				_racksmeta: {
+					singular: 'domains'
+				}
 				model: (raw) ->
 					return raw
 			rdns:

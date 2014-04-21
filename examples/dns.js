@@ -9,8 +9,14 @@
     apiKey: process.argv[3],
     verbosity: 5
   }, function(rs) {
-    return rs.nextgen.images.all(function(images) {
-      return console.log(images);
+    return rs.cloudDNS.domains["new"]([
+      {
+        "name": "somemadeupdomaindotcomlol.com",
+        "emailAddress": "fake@somemadeupdomaindotcomlol.com",
+        "ttl": 3600
+      }
+    ], function(reply) {
+      return console.log(reply);
     });
   });
 

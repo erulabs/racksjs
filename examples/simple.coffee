@@ -4,14 +4,25 @@ RacksJS = require '../lib/racks.js'
 new RacksJS {
   username: process.argv[2]
   apiKey: process.argv[3]
-  verbosity: 0
+  verbosity: 5
 }, (rs) ->
 
 
-	rs.servers.assume('ac860acc-b4bf-40f1-9eb6-64acaac5a65c').setMetadata 
-		'rax_service_level_automation': 'Complete'
+	rs.nextgen.images.all (images) ->
+		console.log images
 
+	#console.log rs.nextgen.images._racksmeta.target()
 
+	#rs.clbs.assume('223797').details (reply) ->
+	#	console.log reply
+
+	#rs.datacenter = 'IAD'
+
+	#rs.cloudFiles.containers.all (reply) ->
+	#	console.log reply
+
+	#rs.servers.assume('1d790167-341f-4f90-9896-f0820c59a637').setMetadata 
+	#	'rax_service_level_automation': 'Complete'
 	#rs.nextgen.servers.all (servers) ->
 	#	servers.forEach (server) ->
 	#		server.changePassword 'prubRuyacEb3spun', (reply) ->
