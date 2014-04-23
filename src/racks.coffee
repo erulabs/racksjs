@@ -1,6 +1,5 @@
 # Racks.coffee - A javascript SDK for the Rackspace Cloud - https://github.com/erulabs/racksjs
 # by Seandon Mooy
-
 "use strict"
 module.exports = class RacksJS
 	constructor: (@authObj, callback) ->
@@ -14,16 +13,16 @@ module.exports = class RacksJS
 		if !@authObj.verbosity? then @verbosity = 0 else @verbosity = @authObj.verbosity
 		if !@authObj.endpoint? then @authObj.endpoint = 'https://identity.api.rackspacecloud.com/v2.0'
 		if !@authObj.test? then @test = no else @test = @authObj.test
+		# Colors for console output:
+		@clr = { red: "\u001b[31m", blue: "\u001b[34m", green: "\u001b[32m", cyan: "\u001b[36m", gray: "\u001b[1;30m", reset: "\u001b[0m" }
 		@buildProducts()
 		# Authenticate
 		if @authObj.username? and @authObj.apiKey? and callback? then @authenticate @authObj, callback
 		@network = 'public'
 	log: (message, verbose) ->
-		if @verbosity is 1
-			console.log message
-		else if @verbosity > 1
-			if !message? then message = '[DEBUG]'
-			console.log message, verbose
+		date = new Date()
+		process.stdout.write(date.getMonth() + '/' + date.getDate() + ' ' + date.toTimeString().split(' ')[0] + ' ')
+		console.log.apply(@, arguments)
 	https: (opts, callback) ->
 		if !opts.headers? then opts.headers = {}
 		# Save the plaintext option, but don't pass it along to HTTPS
@@ -42,12 +41,17 @@ module.exports = class RacksJS
 		opts.host = opts.url.host
 		opts.path = opts.url.path
 		delete opts.url
-		# Place the request
-		if @verbosity > 3 then @log 'HTTP Request: ', opts
+		# Logging
+		if @verbosity is 1
+			@log @clr.cyan + opts.method + @clr.reset + ':', opts.path
+		else if @verbosity > 1
+			@log @clr.cyan + 'Request' + @clr.reset + ':', opts
+		# Make the HTTP request
 		if @test
 			# If we're testing, callback with a mock response instead.
 			@mockApi(opts, callback)
 		else
+			# Place the request
 			request = @https_node.request opts, (response) =>
 				rawReply = ''
 				response.setEncoding 'utf8'
@@ -65,7 +69,10 @@ module.exports = class RacksJS
 						try reply = JSON.parse rawReply
 						catch error then reply = rawReply
 					# Log and callback
-					if @verbosity > 4 then @log 'HTTP Reply:', reply
+					if @verbosity is 1
+						@log @clr.cyan + 'Reply' + @clr.reset + ':', response.statusCode
+					else if @verbosity > 3
+						@log @clr.cyan + 'Reply' + @clr.reset + ':', reply
 					callback reply
 				response.on 'error', (error) => @log error, opts
 			# Write data down the pipe (in the case of POST and PUTs, etc)

@@ -1,5 +1,5 @@
 
-RacksJS = require '../lib/racks.js'
+RacksJS = require '../dist/racks.js'
 
 new RacksJS {
   username: process.argv[2]

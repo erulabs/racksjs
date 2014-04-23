@@ -26,6 +26,14 @@
       } else {
         this.test = this.authObj.test;
       }
+      this.clr = {
+        red: "\u001b[31m",
+        blue: "\u001b[34m",
+        green: "\u001b[32m",
+        cyan: "\u001b[36m",
+        gray: "\u001b[1;30m",
+        reset: "\u001b[0m"
+      };
       this.buildProducts();
       if ((this.authObj.username != null) && (this.authObj.apiKey != null) && (callback != null)) {
         this.authenticate(this.authObj, callback);
@@ -34,14 +42,10 @@
     }
 
     RacksJS.prototype.log = function(message, verbose) {
-      if (this.verbosity === 1) {
-        return console.log(message);
-      } else if (this.verbosity > 1) {
-        if (message == null) {
-          message = '[DEBUG]';
-        }
-        return console.log(message, verbose);
-      }
+      var date;
+      date = new Date();
+      process.stdout.write(date.getMonth() + '/' + date.getDate() + ' ' + date.toTimeString().split(' ')[0] + ' ');
+      return console.log.apply(this, arguments);
     };
 
     RacksJS.prototype.https = function(opts, callback) {
@@ -65,8 +69,10 @@
       opts.host = opts.url.host;
       opts.path = opts.url.path;
       delete opts.url;
-      if (this.verbosity > 3) {
-        this.log('HTTP Request: ', opts);
+      if (this.verbosity === 1) {
+        this.log(this.clr.cyan + opts.method + this.clr.reset + ':', opts.path);
+      } else if (this.verbosity > 1) {
+        this.log(this.clr.cyan + 'Request' + this.clr.reset + ':', opts);
       }
       if (this.test) {
         return this.mockApi(opts, callback);
@@ -95,8 +101,10 @@
                   reply = rawReply;
                 }
               }
-              if (_this.verbosity > 4) {
-                _this.log('HTTP Reply:', reply);
+              if (_this.verbosity === 1) {
+                _this.log(_this.clr.cyan + 'Reply' + _this.clr.reset + ':', response.statusCode);
+              } else if (_this.verbosity > 3) {
+                _this.log(_this.clr.cyan + 'Reply' + _this.clr.reset + ':', reply);
               }
               return callback(reply);
             });
