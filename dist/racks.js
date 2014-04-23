@@ -34,6 +34,18 @@
         gray: "\u001b[1;30m",
         reset: "\u001b[0m"
       };
+      this.httpCodes = {
+        '200': 'OK',
+        '202': 'Accepted',
+        '204': 'No Content',
+        '400': 'Compute Fault / Bad Request',
+        '401': 'Unauthorized',
+        '403': 'Forbidden',
+        '404': 'Not found',
+        '413': 'Over API limits',
+        '415': 'Bad Media Type',
+        '503': 'Service Unavailable'
+      };
       this.buildProducts();
       if ((this.authObj.username != null) && (this.authObj.apiKey != null) && (callback != null)) {
         this.authenticate(this.authObj, callback);
@@ -102,9 +114,9 @@
                 }
               }
               if (_this.verbosity === 1) {
-                _this.log(_this.clr.cyan + 'Reply' + _this.clr.reset + ':', response.statusCode);
+                _this.log(_this.clr.green + 'Reply' + _this.clr.reset + ':', response.statusCode, _this.httpCodes[response.statusCode]);
               } else if (_this.verbosity > 3) {
-                _this.log(_this.clr.cyan + 'Reply' + _this.clr.reset + ':', reply);
+                _this.log(_this.clr.green + 'Reply' + _this.clr.reset + ':', reply);
               }
               return callback(reply);
             });
@@ -136,6 +148,11 @@
     };
 
     RacksJS.prototype["delete"] = function(url, callback) {
+      if (callback == null) {
+        callback = function() {
+          return false;
+        };
+      }
       return this.https({
         method: 'DELETE',
         url: url

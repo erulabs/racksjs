@@ -15,6 +15,18 @@ module.exports = class RacksJS
 		if !@authObj.test? then @test = no else @test = @authObj.test
 		# Colors for console output:
 		@clr = { red: "\u001b[31m", blue: "\u001b[34m", green: "\u001b[32m", cyan: "\u001b[36m", gray: "\u001b[1;30m", reset: "\u001b[0m" }
+		# HTTP human readable codes from Rackspace API docs
+		@httpCodes =
+			'200': 'OK'
+			'202': 'Accepted'
+			'204': 'No Content'
+			'400': 'Compute Fault / Bad Request'
+			'401': 'Unauthorized'
+			'403': 'Forbidden'
+			'404': 'Not found'
+			'413': 'Over API limits'
+			'415': 'Bad Media Type'
+			'503': 'Service Unavailable'
 		@buildProducts()
 		# Authenticate
 		if @authObj.username? and @authObj.apiKey? and callback? then @authenticate @authObj, callback
@@ -70,9 +82,9 @@ module.exports = class RacksJS
 						catch error then reply = rawReply
 					# Log and callback
 					if @verbosity is 1
-						@log @clr.cyan + 'Reply' + @clr.reset + ':', response.statusCode
+						@log @clr.green + 'Reply' + @clr.reset + ':', response.statusCode, @httpCodes[response.statusCode]
 					else if @verbosity > 3
-						@log @clr.cyan + 'Reply' + @clr.reset + ':', reply
+						@log @clr.green + 'Reply' + @clr.reset + ':', reply
 					callback reply
 				response.on 'error', (error) => @log error, opts
 			# Write data down the pipe (in the case of POST and PUTs, etc)
@@ -80,7 +92,10 @@ module.exports = class RacksJS
 			request.end()
 	get: (url, callback) -> @https { method: 'GET', url: url }, callback
 	post: (url, data, callback) -> @https { method: 'POST', url: url, data: data }, callback
-	delete: (url, callback) -> @https { method: 'DELETE', url: url }, callback
+	delete: (url, callback) -> 
+		unless callback?
+			callback = () -> return false
+		@https { method: 'DELETE', url: url }, callback
 	put: (url, data, callback) -> @https { method: 'PUT', url: url, data: data }, callback
 	authenticate: (authObj, callback) ->
 		if !authObj.username? or !authObj.apiKey? then return callback { error: 'No username or apiKey provided to .authenticate()' }
