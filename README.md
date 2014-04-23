@@ -1,8 +1,6 @@
-Racksjs [![Build Status](https://travis-ci.org/erulabs/racksjs.png?branch=0.2)](https://travis-ci.org/erulabs/racksjs)
+Racks.js [![Build Status](https://travis-ci.org/erulabs/racksjs.png?branch=0.2)](https://travis-ci.org/erulabs/racksjs)
 =======
 __An unoffical javascript SDK for the Rackspace Cloud__. 
-# Racks.js
-### a javascript SDK for the Rackspace Cloud
 by Seandon Mooy with contributions from Matt Ellsworth
 
 ### About / News
