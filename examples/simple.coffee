@@ -1,13 +1,20 @@
-
+#
+# This script is setup to use the username and API provided as commandline arguments (as a simple way of keeping them out of the codebase)
+# RacksJS ships with coffeescript examples.
+# You can run these by installing coffee-script:
+#
+# 	sudo npm install -g coffee-script
+#
+# and then by running them with your API details:
+#
+# 	coffee nextgen_server.coffee -n API_USERNAME API_KEY
+#
 RacksJS = require '../dist/racks.js'
-
 new RacksJS {
-  username: process.argv[2]
-  apiKey: process.argv[3]
-  verbosity: 5
+  username: process.argv[3]
+  apiKey: process.argv[4]
+  verbosity: 1
 }, (rs) ->
-
-
 	rs.nextgen.images.all (images) ->
 		console.log images
 
@@ -25,7 +32,7 @@ new RacksJS {
 	#	'rax_service_level_automation': 'Complete'
 	#rs.nextgen.servers.all (servers) ->
 	#	servers.forEach (server) ->
-	#		server.changePassword 'prubRuyacEb3spun', (reply) ->
+	#		server.changePassword 'some_new_password', (reply) ->
 	#			console.log 'server:', server.name, reply
 
 	## NextGen, also known as rs.cloudServersOpenStack, includes all modern Rackspace servers.

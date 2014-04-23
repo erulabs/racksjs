@@ -2,9 +2,9 @@
 RacksJS = require '../dist/racks.js'
 
 new RacksJS {
-  username: process.argv[2]
-  apiKey: process.argv[3]
-  verbosity: 5
+  username: process.argv[3]
+  apiKey: process.argv[4]
+  verbosity: 1
 }, (rs) ->
 
 
