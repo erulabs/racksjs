@@ -260,8 +260,7 @@
               return response.push(_this.buildModel(resource, raw));
             });
             return callback(response);
-          } else {
-            _this.log(void 0, 'product wrapping failure - contact the developers of racksjs', resource.meta);
+          } else if (callback != null) {
             return callback(reply);
           }
         };
@@ -430,15 +429,22 @@
     };
 
     RacksJS.prototype.mockApi = function(opts, callback) {
-      var cbObj, fakeEndpoints, product, _i, _len, _ref;
-      if (opts.data == null) {
-        return callback([
-          {
-            id: 1
-          }, {
-            id: 2
+      var cbObj, fakeEndpoints, fakeReply, product, _i, _len, _ref;
+      fakeReply = [
+        {
+          id: 1,
+          '_racksmeta': {
+            name: 'cloudServersOpenStack'
           }
-        ]);
+        }, {
+          id: 2,
+          '_racksmeta': {
+            name: 'cloudServersOpenStack'
+          }
+        }
+      ];
+      if (opts.data == null) {
+        return callback(fakeReply);
       }
       if (opts.data.match(/apiKeyCredentials/)) {
         fakeEndpoints = ['http://some-fake-testing-url.com', 0, 1, 2];
@@ -463,13 +469,7 @@
         }
         return callback(cbObj);
       } else {
-        return callback([
-          {
-            id: 1
-          }, {
-            id: 2
-          }
-        ]);
+        return callback(fakeReply);
       }
     };
 

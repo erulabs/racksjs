@@ -163,8 +163,7 @@ module.exports = class RacksJS
 				reply.forEach (raw) =>
 					response.push @buildModel resource, raw
 				callback response
-			else
-				@log undefined, 'product wrapping failure - contact the developers of racksjs', resource.meta
+			else if callback?
 				callback reply
 	subResource: (resource, id, subResource) ->
 		@buildResource resource._racksmeta.product, resource._racksmeta.name + '/' + subResource, {
@@ -249,12 +248,24 @@ module.exports = class RacksJS
 				@log 'no product named "' + product.name + '" found in racksjs - please contact the maintainers'
 	# A testing API
 	mockApi: (opts, callback) ->
+		# Fake reply object:
+		fakeReply = [
+			{
+				id: 1,
+				'_racksmeta': {
+					name: 'cloudServersOpenStack'
+				}
+			},
+			{
+				id: 2,
+				'_racksmeta': {
+					name: 'cloudServersOpenStack'
+				}
+			},
+		]
 		# The authentication call
 		if !opts.data?
-			return callback([
-				{ id: 1 },
-				{ id: 2 }
-			])
+			return callback(fakeReply)
 		if opts.data.match /apiKeyCredentials/
 			fakeEndpoints = [ 'http://some-fake-testing-url.com', 0, 1, 2 ]
 			cbObj =
@@ -271,10 +282,7 @@ module.exports = class RacksJS
 				}
 			return callback(cbObj)
 		else
-			return callback([
-				{ id: 1 },
-				{ id: 2 }
-			])
+			return callback(fakeReply)
 
 	buildProducts: () ->
 		rack = @
