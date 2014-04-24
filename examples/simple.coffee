@@ -13,9 +13,15 @@ RacksJS = require '../dist/racks.js'
 new RacksJS {
   username: process.argv[3]
   apiKey: process.argv[4]
-  verbosity: 1
+  verbosity: 2
 }, (rs) ->
-	
+
+	#rs.cloudFilesCDN.containers.all (containers) ->
+	#	console.log containers
+
+	#rs.network = 'internal'
+	#rs.datacenter = 'IAD'
+
 	rs.cloudFiles.containers.all (containers) ->
 		console.log containers
 

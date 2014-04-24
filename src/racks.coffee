@@ -9,10 +9,23 @@ module.exports = class RacksJS
 		# Defaults
 		@authToken = no
 		@products = {}
-		if !@authObj? then @authObj = {}
-		if !@authObj.verbosity? then @verbosity = 0 else @verbosity = @authObj.verbosity
-		if !@authObj.endpoint? then @authObj.endpoint = 'https://identity.api.rackspacecloud.com/v2.0'
+		unless @authObj? then @authObj = {}
+		# Default verbosity
+		unless @authObj.verbosity?
+			@verbosity = 0
+		else
+			@verbosity = @authObj.verbosity
+		# Default endpoint (Rackspace v2.0 api)
+		unless @authObj.endpoint?
+			@authObj.endpoint = 'https://identity.api.rackspacecloud.com/v2.0'
+		# Test mode
 		if !@authObj.test? then @test = no else @test = @authObj.test
+		unless @authObj.network?
+			@network = 'public'
+		else
+			@network = @authObj.network
+		if @network is 'private'
+			@network = 'internal'
 		# Colors for console output:
 		@clr = { red: "\u001b[31m", blue: "\u001b[34m", green: "\u001b[32m", cyan: "\u001b[36m", gray: "\u001b[1;30m", reset: "\u001b[0m" }
 		# HTTP human readable codes from Rackspace API docs
@@ -30,7 +43,6 @@ module.exports = class RacksJS
 		@buildProducts()
 		# Authenticate
 		if @authObj.username? and @authObj.apiKey? and callback? then @authenticate @authObj, callback
-		@network = 'public'
 	log: (message, verbose) ->
 		date = new Date()
 		process.stdout.write(date.getMonth() + '/' + date.getDate() + ' ' + date.toTimeString().split(' ')[0] + ' ')
@@ -81,7 +93,7 @@ module.exports = class RacksJS
 						try reply = JSON.parse rawReply
 						catch error then reply = rawReply
 					# Log and callback
-					if @verbosity is 1
+					if @verbosity > 0 and @verbosity < 4
 						@log @clr.green + 'Reply' + @clr.reset + ':', response.statusCode, @httpCodes[response.statusCode]
 					else if @verbosity > 3
 						@log @clr.green + 'Reply' + @clr.reset + ':', reply
@@ -221,8 +233,10 @@ module.exports = class RacksJS
 						target = false
 						if rack.datacenter? then dc = rack.datacenter else dc = rack.access.user['RAX-AUTH:defaultRegion']
 						if @endpoints.length > 1
+							# Based on the rack.network and chosen datacenter, target() searches the available endpoints
 							@endpoints.forEach (endpoint) =>
 								if endpoint.region is dc then target = endpoint[rack.network.toLowerCase() + 'URL']
+								#console.log 'rack.network is', rack.network, 'and the result is:', target, 'available endpoints are', @endpoints
 						else
 							target = @endpoints[0]
 						if typeof target is 'object'
@@ -437,7 +451,18 @@ module.exports = class RacksJS
 						rack.get @_racksmeta.target(), (reply) -> callback(reply.server)
 					return raw
 		# http://docs.rackspace.com/files/api/v1/cf-devguide/content/API_Operations_for_CDN_Services-d1e2386.html
-		@cloudFilesCDN = {}
+		@cloudFilesCDN =
+			containers:
+				_racksmeta:
+					# Containers are accessed with a GET directly to the storage endpoint - ie: there is no URL path beyond the product base
+					resourceString: ''
+					plaintext: yes
+				model: (containerName) ->
+					catalog =
+						name: containerName
+						_racksmeta:
+							name: containerName
+					return catalog
 		# http://docs.rackspace.com/files/api/v1/cf-devguide/content/API_Operations_for_Storage_Services-d1e942.html
 		@cloudFiles =
 			containers:

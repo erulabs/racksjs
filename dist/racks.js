@@ -26,6 +26,14 @@
       } else {
         this.test = this.authObj.test;
       }
+      if (this.authObj.network == null) {
+        this.network = 'public';
+      } else {
+        this.network = this.authObj.network;
+      }
+      if (this.network === 'private') {
+        this.network = 'internal';
+      }
       this.clr = {
         red: "\u001b[31m",
         blue: "\u001b[34m",
@@ -50,7 +58,6 @@
       if ((this.authObj.username != null) && (this.authObj.apiKey != null) && (callback != null)) {
         this.authenticate(this.authObj, callback);
       }
-      this.network = 'public';
     }
 
     RacksJS.prototype.log = function(message, verbose) {
@@ -113,7 +120,7 @@
                   reply = rawReply;
                 }
               }
-              if (_this.verbosity === 1) {
+              if (_this.verbosity > 0 && _this.verbosity < 4) {
                 _this.log(_this.clr.green + 'Reply' + _this.clr.reset + ':', response.statusCode, _this.httpCodes[response.statusCode]);
               } else if (_this.verbosity > 3) {
                 _this.log(_this.clr.green + 'Reply' + _this.clr.reset + ':', reply);
@@ -777,7 +784,24 @@
           }
         }
       };
-      this.cloudFilesCDN = {};
+      this.cloudFilesCDN = {
+        containers: {
+          _racksmeta: {
+            resourceString: '',
+            plaintext: true
+          },
+          model: function(containerName) {
+            var catalog;
+            catalog = {
+              name: containerName,
+              _racksmeta: {
+                name: containerName
+              }
+            };
+            return catalog;
+          }
+        }
+      };
       this.cloudFiles = {
         containers: {
           _racksmeta: {
