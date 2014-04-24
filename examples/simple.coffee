@@ -15,8 +15,15 @@ new RacksJS {
   apiKey: process.argv[4]
   verbosity: 1
 }, (rs) ->
-	rs.nextgen.images.all (images) ->
-		console.log images
+	
+	rs.cloudFiles.containers.all (containers) ->
+		console.log containers
+
+	#rs.nextgen.servers.all (servers) ->
+	#	console.log servers
+
+	#rs.nextgen.images.all (images) ->
+	#	console.log images
 
 	#console.log rs.nextgen.images._racksmeta.target()
 

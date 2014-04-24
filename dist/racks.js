@@ -780,6 +780,10 @@
       this.cloudFilesCDN = {};
       this.cloudFiles = {
         containers: {
+          _racksmeta: {
+            resourceString: '',
+            plaintext: true
+          },
           model: function(containerName) {
             var catalog;
             catalog = {
