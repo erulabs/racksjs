@@ -784,24 +784,6 @@
           }
         }
       };
-      this.cloudFilesCDN = {
-        containers: {
-          _racksmeta: {
-            resourceString: '',
-            plaintext: true
-          },
-          model: function(containerName) {
-            var catalog;
-            catalog = {
-              name: containerName,
-              _racksmeta: {
-                name: containerName
-              }
-            };
-            return catalog;
-          }
-        }
-      };
       this.cloudFiles = {
         containers: {
           _racksmeta: {

@@ -451,18 +451,19 @@ module.exports = class RacksJS
 						rack.get @_racksmeta.target(), (reply) -> callback(reply.server)
 					return raw
 		# http://docs.rackspace.com/files/api/v1/cf-devguide/content/API_Operations_for_CDN_Services-d1e2386.html
-		@cloudFilesCDN =
-			containers:
-				_racksmeta:
-					# Containers are accessed with a GET directly to the storage endpoint - ie: there is no URL path beyond the product base
-					resourceString: ''
-					plaintext: yes
-				model: (containerName) ->
-					catalog =
-						name: containerName
-						_racksmeta:
-							name: containerName
-					return catalog
+		# FIXME: This should NOT be it's own product... Otherwise we duplicate a very large amount of code from RacksJS.cloudFiles
+		#@cloudFilesCDN =
+		#	containers:
+		#		_racksmeta:
+		#			# Containers are accessed with a GET directly to the storage endpoint - ie: there is no URL path beyond the product base
+		#			resourceString: ''
+		#			plaintext: yes
+		#		model: (containerName) ->
+		#			catalog =
+		#				name: containerName
+		#				_racksmeta:
+		#					name: containerName
+		#			return catalog
 		# http://docs.rackspace.com/files/api/v1/cf-devguide/content/API_Operations_for_Storage_Services-d1e942.html
 		@cloudFiles =
 			containers:
