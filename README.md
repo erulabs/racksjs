@@ -12,52 +12,75 @@ Proper documentation and a lot more examples are soon to come - we're still miss
 
 ### Usage ###
 ```html
-    // Include racks.js and start it with a few settings
-    new (require('../racks.js'))({
-        username: 'Rackspace cloud username',
-        apiKey: 'Rackspace cloud API KEY',
-        verbosity: 1, // 0 - 5, 0 is no output, 1 is script only (rs.log), 5 is debug.
-    }, function (rs) {
-        // Log the error and stop if we fail to authenticate
-        if (rs.error) return rs.log(rs.error);
-        //
-        // You can find details about all the products and their resources by diving into RacksJS.products object.
-        // If you're familiar with docs.rackspace.com, the "product -> resource -> action" concept
-        // shouldn't seem strange. With the docs in mind, you'll start to guess at products:
-        //   rs.cloudServersOpenStack.servers ... .networks ... .flavors 
-        //   rs.cloudLoadBalancers.loadBalancers
-        //   rs.cloudFiles.containers
-        // RacksJS provides shortcuts as well, which should be easy to guess: rs.servers, rs.clbs, rs.cf...
-        // each "resource" (containers, servers) belongs to one "product" (cloudLoadBalancers)
-        // and each resource has some common functionality: .all(), .find(), and sometimes .new().
-        // there are often other, resource specific functions. (and sometimes product functions!)
-        // read the docs, the racks.js code, or console.log(resource);
-        // 
-        // Below I will try to illistrate some example Racks.js code. For brand new stuff,
-        // check tests/generic.js
-        //
-        //
-        // shorthand for: RacksJS.cloudFiles.containers.all()
-        rs.cf.all(function (containers){ 
-            rs.log(containers);
-        });
-        // Do something to every OpenStack (NextGen) server
-        // Keep in mind, rs.cloudServersOpenStack.servers is the same as rs.servers (it's the full product -> resource!)
-        rs.cloudServersOpenStack.servers.all(function(servers){
-            servers.forEach(function (server) {
-                // These very closely match: http://docs.rackspace.com/servers/api/v2/cs-devguide/content/Servers-d1e2073.html
-                server.updateMetadata ...
-                server.reboot ...
-                // Method names are aimed at matching the documentation exactly: http://docs.rackspace.com/servers/api/v2/cs-devguide/content/List_Addresses-d1e3014.html
-                server.addresses ...
-            });
-        });
-        // Many other resources live in various products. For instance:
-        rs.cloudServersOpenStack.images.all(function (images) {});
-        // When in doubt about the naming convention, the rackspace API documentation ought to help,
-        // However, RackJS is incomplete. I recommend checking out our product catalog in racks.js:
-        // RacksJS.prototype.buildCatalog() contains all product and resource information
+// Include racks.js and start it with a few settings
+new (require('../racks.js'))({
+    username: 'Rackspace cloud username',
+    apiKey: 'Rackspace cloud API KEY',
+    verbosity: 1, // 0 - 5, 0 is no output, 1 is script only (rs.log), 5 is debug.
+}, function (rs) {
+    // Log the error and stop if we fail to authenticate
+    if (rs.error) return rs.log(rs.error);
+
+    // Get a list of all images:
+    rs.cloudServersOpenStack.images.all( function( anArrayOfAllImages ) {
+        ...
     });
+
+    // Create a new server:
+    rs.cloudServersOpenStack.servers.new({
+      'name': 'racksjs_test',
+      'flavorRef': 'performance1-1',
+      'imageRef': 'f70ed7c7-b42e-4d77-83d8-40fa29825b85',
+    }, function (server) {
+        // Some functions, like .new() on almost everything, reply instantly and are not instantly read - like a server.
+        // so Racksjs provides helper functions:
+        server.systemActive(function () {
+            // systemAction fires once the server is full built
+            server.reboot();
+        });
+    });
+
+    // You can find details about all the products and their resources by diving into
+    // the RacksJS.products object. If you're familiar with docs.rackspace.com,
+    // the "product.resource.action" concept shouldn't seem strange:
+    //   rs.cloudServersOpenStack.servers
+    //   rs.cloudLoadBalancers.loadBalancers
+    //   rs.cloudFiles.containers
+    //   and so on
+    //
+    // RacksJS provides shortcuts as wel: rs.servers, rs.clbs, rs.cf...
+    // each "resource" (containers, servers) belongs to one "product" (cloudLoadBalancers)
+    // and each resource has some common functionality: .all(), .find(), and sometimes .new().
+    // there are often other, resource specific functions. (and sometimes product functions!)
+    // read the docs, the racks.js code, or console.log(resource);
+    // 
+    // Below I will try to illistrate some example Racks.js code. For brand new stuff,
+    // check tests/generic.js
+    //
+    //
+    // shorthand for: RacksJS.cloudFiles.containers.all()
+    rs.cf.all(function (containers){ 
+        rs.log(containers);
+    });
+    // Do something to every OpenStack (NextGen) server
+    // Keep in mind, rs.cloudServersOpenStack.servers is the same as rs.servers
+    rs.cloudServersOpenStack.servers.all(function(servers){
+        servers.forEach(function (server) {
+            // These very closely match:
+            // http://docs.rackspace.com/servers/api/v2/cs-devguide/content/Servers-d1e2073.html
+            server.updateMetadata ...
+            server.reboot ...
+            // Method names are aimed at matching the documentation exactly:
+            // http://docs.rackspace.com/servers/api/v2/cs-devguide/content/List_Addresses-d1e3014.html
+            server.addresses ...
+        });
+    });
+    // Many other resources live in various products. For instance:
+    rs.cloudServersOpenStack.images.all(function (images) {});
+    // When in doubt about the naming convention, the rackspace API documentation ought to help,
+    // However, RackJS is incomplete. I recommend checking out our product catalog in racks.js:
+    // RacksJS.prototype.buildCatalog() contains all product and resource information
+});
 ```
 
 ### Important info ###
