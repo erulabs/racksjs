@@ -4,6 +4,7 @@
 
   module.exports = RacksJS = (function() {
     function RacksJS(authObj, callback) {
+      var _ref;
       this.authObj = authObj;
       this.https_node = require('https');
       this.url = require('url');
@@ -31,8 +32,8 @@
       } else {
         this.network = this.authObj.network;
       }
-      if (this.network === 'private') {
-        this.network = 'internal';
+      if ((_ref = this.network) !== 'private' && _ref !== 'internal') {
+        this.network = 'public';
       }
       this.clr = {
         red: "\u001b[31m",
@@ -62,6 +63,9 @@
 
     RacksJS.prototype.log = function(message, verbose) {
       var date;
+      if (this.verbosity === 0) {
+        return false;
+      }
       date = new Date();
       process.stdout.write(date.getMonth() + '/' + date.getDate() + ' ' + date.toTimeString().split(' ')[0] + ' ');
       return console.log.apply(this, arguments);
@@ -403,7 +407,7 @@
                   target = target[rack.network.toLowerCase() + 'URL'];
                 }
                 if (rack.test) {
-                  target = 'https://mockapi.com';
+                  target = 'https://MOCKAPI';
                 }
                 if (target.substr(-1) !== '/') {
                   target = target + '/';
@@ -428,7 +432,7 @@
               }
             }
             return _results;
-          } else {
+          } else if (_this.verbosity > 3) {
             return _this.log('no product named "' + product.name + '" found in racksjs - please contact the maintainers');
           }
         };
@@ -454,7 +458,7 @@
         return callback(fakeReply);
       }
       if (opts.data.match(/apiKeyCredentials/)) {
-        fakeEndpoints = ['http://some-fake-testing-url.com', 0, 1, 2];
+        fakeEndpoints = ['http://MOCKAPI', 0, 1, 2];
         cbObj = {
           access: {
             user: {

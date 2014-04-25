@@ -24,8 +24,9 @@ module.exports = class RacksJS
 			@network = 'public'
 		else
 			@network = @authObj.network
-		if @network is 'private'
-			@network = 'internal'
+		# Fix a common mistake - the networks are 'public' and 'internal'...
+		if @network not in [ 'private', 'internal' ]
+			@network = 'public'
 		# Colors for console output:
 		@clr = { red: "\u001b[31m", blue: "\u001b[34m", green: "\u001b[32m", cyan: "\u001b[36m", gray: "\u001b[1;30m", reset: "\u001b[0m" }
 		# HTTP human readable codes from Rackspace API docs
@@ -40,10 +41,12 @@ module.exports = class RacksJS
 			'413': 'Over API limits'
 			'415': 'Bad Media Type'
 			'503': 'Service Unavailable'
+		# Build the service catalog 
 		@buildProducts()
 		# Authenticate
 		if @authObj.username? and @authObj.apiKey? and callback? then @authenticate @authObj, callback
 	log: (message, verbose) ->
+		if @verbosity is 0 then return false
 		date = new Date()
 		process.stdout.write(date.getMonth() + '/' + date.getDate() + ' ' + date.toTimeString().split(' ')[0] + ' ')
 		console.log.apply(@, arguments)
@@ -242,7 +245,7 @@ module.exports = class RacksJS
 						if typeof target is 'object'
 							target = target[rack.network.toLowerCase() + 'URL']
 						if rack.test
-							target = 'https://mockapi.com'
+							target = 'https://MOCKAPI'
 						if target.substr(-1) isnt '/' then target = target + '/'
 						return target
 				}
@@ -258,7 +261,7 @@ module.exports = class RacksJS
 						if resourceName isnt '_racksmeta'
 							@[product.name][resourceName] = @buildResource product.name, resourceName
 							@products[product.name][resourceName] = @[product.name][resourceName]
-			else
+			else if @verbosity > 3
 				@log 'no product named "' + product.name + '" found in racksjs - please contact the maintainers'
 	# A testing API
 	mockApi: (opts, callback) ->
@@ -266,22 +269,20 @@ module.exports = class RacksJS
 		fakeReply = [
 			{
 				id: 1,
-				'_racksmeta': {
+				'_racksmeta':
 					name: 'cloudServersOpenStack'
-				}
 			},
 			{
 				id: 2,
-				'_racksmeta': {
+				'_racksmeta':
 					name: 'cloudServersOpenStack'
-				}
 			},
 		]
 		# The authentication call
 		if !opts.data?
 			return callback(fakeReply)
 		if opts.data.match /apiKeyCredentials/
-			fakeEndpoints = [ 'http://some-fake-testing-url.com', 0, 1, 2 ]
+			fakeEndpoints = [ 'http://MOCKAPI', 0, 1, 2 ]
 			cbObj =
 				access:
 					user:
