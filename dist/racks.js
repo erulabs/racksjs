@@ -466,7 +466,7 @@
             serviceCatalog: []
           }
         };
-        _ref = ['cloudServersOpenStack', 'cloudServers', 'cloudLoadBalancers', 'cloudFilesCDN', 'cloudFiles', 'cloudBlockStorage', 'cloudDatabases', 'cloudBackup', 'cloudDNS', 'cloudImages', 'cloudMonitoring'];
+        _ref = ['cloudServersOpenStack', 'cloudServers', 'cloudLoadBalancers', 'cloudFiles', 'cloudBlockStorage', 'cloudDatabases', 'cloudBackup', 'cloudDNS', 'cloudImages', 'cloudMonitoring'];
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           product = _ref[_i];
           cbObj.access.serviceCatalog.push({

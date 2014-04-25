@@ -289,7 +289,7 @@ module.exports = class RacksJS
 					token:
 						id: 'some-fake-testing-id'
 					serviceCatalog: []
-			for product in [ 'cloudServersOpenStack', 'cloudServers', 'cloudLoadBalancers', 'cloudFilesCDN', 'cloudFiles', 'cloudBlockStorage', 'cloudDatabases', 'cloudBackup', 'cloudDNS', 'cloudImages', 'cloudMonitoring' ]
+			for product in [ 'cloudServersOpenStack', 'cloudServers', 'cloudLoadBalancers', 'cloudFiles', 'cloudBlockStorage', 'cloudDatabases', 'cloudBackup', 'cloudDNS', 'cloudImages', 'cloudMonitoring' ]
 				cbObj.access.serviceCatalog.push {
 					name: product,
 					endpoints: fakeEndpoints
