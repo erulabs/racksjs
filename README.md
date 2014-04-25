@@ -1,15 +1,17 @@
 Racks.js [![Build Status](https://travis-ci.org/erulabs/racksjs.png?branch=0.2)](https://travis-ci.org/erulabs/racksjs)
 =======
-__An unoffical javascript SDK for the Rackspace Cloud__. 
+__An unoffical javascript SDK for the Rackspace Cloud__
+
 by Seandon Mooy with contributions from Matt Ellsworth
 
-### About / News
+### About / News ###
 
 Racksjs is mostly an attempt by the author to get intimate with the Rackspace API. It's also quite nice to script with - particularly because it doesn't invent any vocabulary - it simply wraps the rackspace api documentation as closely as possible.
 
 Proper documentation and a lot more examples are soon to come - we're still missing a lot of functionality, but that too is on its way! For now, here is some example code:
 
-### Usage
+### Usage ###
+```html
     // Include racks.js and start it with a few settings
     new (require('../racks.js'))({
         username: 'Rackspace cloud username',
@@ -56,8 +58,9 @@ Proper documentation and a lot more examples are soon to come - we're still miss
         // However, RackJS is incomplete. I recommend checking out our product catalog in racks.js:
         // RacksJS.prototype.buildCatalog() contains all product and resource information
     });
+```
 
-### Important info
+### Important info ###
 This repo is not an official rackspace SDK and as such don't expect anyone to support it! (outside of this github). Unless you're messing around with experimental code, I highly recommend using nodejitsu's pkgcloud.
 
 Feel free to issue pull requests :) Thanks!
