@@ -1,0 +1,11 @@
+language: node_js
+node_js:
+  - 0.10
+
+notifications:
+  email: "seandon.mooy@gmail.com"
+
+env:
+  global:
+    - secure: "nIiLEnJdo6fyrcDs9g6wouOY6sb1ksAtw8GxmMw68BVjsPDmSLlO/1A8222UU/t3Cd47Jn/1fO6BxPRx7xBowCDTNs5YazUUc1RATRepW/jssQeLVJc0iGxx85hfgFVZSVrdYCF3Oa8aYSzPKJTgSeGDZiIvkqJ+5p2OG4sj1tY="
+    - secure: "b5Ez39ER0Xj+SomxeswoDgVh9tGqvEPGv98M9gnpGkzfXlOHDqojiGwycOqP9Lvp0+jmCso43Ihbi2l2Nx2LcJcKJyxygQuxHV2OVpNhwxincyVcJcVxPxINYk4PgbLF+94doW6sLzIJxuAmh89MAHwvPs7exYhOBT7+G+H+JrA="

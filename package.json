@@ -1,20 +1,35 @@
 {
-	"name": "racksjs",
-	"author": "Seandon Mooy",
-	"contributors": [ "Matt Ellsworth" ],
-	"email": "seandon.mooy@gmail.com",
-	"version": "0.1",
-	"dependencies": {
-
-	},
-	"devDependencies": {
-
-	},
-	"engines": {
-		"node": ">=0.10"
-	},
-	"repository": {
-		"type": "git",
-		"url": "git@github.com:erulabs/racksjs.git"
-	}
+  "name": "racksjs",
+  "description": "a javascript SDK for the Rackspace Cloud",
+  "author": "Seandon Mooy",
+  "email": "seandon.mooy@gmail.com",
+  "contributors": [ "Matt Ellsworth" ],
+  "version": "0.2.0",
+  "main": "./dist/racks.js",
+  "keywords": [
+    "rackspace",
+    "cloud sdk"
+  ],
+  "dependencies": {
+    "commander": "latest"
+  },
+  "engines": {
+    "node": ">=0.10"
+  },
+  "homepage": "https://github.com/erulabs/racksjs",
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:erulabs/racksjs.git"
+  },
+  "devDependencies": {
+    "mocha": ">=1.17",
+    "gulp": "3.6.1",
+    "gulp-concat": "2.2.0",
+    "gulp-coffee": "1.4.2",
+    "gulp-uglify": "0.2.1",
+    "gulp-rename": "1.2.0"
+  },
+  "scripts": {
+    "test": "make test-all"
+  }
 }
