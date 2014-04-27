@@ -744,7 +744,19 @@
       this.cloudServers = {
         servers: {
           model: function(raw) {
+            raw.addresses = function(callback) {
+              return rack.get(this._racksmeta.target() + '/ips', callback);
+            };
             return raw;
+          }
+        },
+        createImage: function(options, callback) {
+          if ((options.name != null) && (options.serverId != null)) {
+            return rack.post(this._racksmeta.target() + 'images', {
+              "image": options
+            }, callback);
+          } else {
+            return rack.log('Must provide "name" and "serverId" for firstgen.createImage({})');
           }
         },
         images: {
@@ -760,16 +772,28 @@
       };
       this.cloudLoadBalancers = {
         algorithms: {
+          _racksmeta: {
+            resourceString: 'loadbalancers/algorithms',
+            name: 'algorithms'
+          },
           model: function(raw) {
             return raw;
           }
         },
         alloweddomains: {
+          _racksmeta: {
+            resourceString: 'loadbalancers/alloweddomains',
+            name: 'alloweddomains'
+          },
           model: function(raw) {
             return raw;
           }
         },
         protocols: {
+          _racksmeta: {
+            resourceString: 'loadbalancers/protocols',
+            name: 'protocols'
+          },
           model: function(raw) {
             return raw;
           }
@@ -780,10 +804,40 @@
           },
           model: function(raw) {
             raw.details = function(callback) {
-              return rack.get(this._racksmeta.target(), function(reply) {
-                return callback(reply.server);
-              });
+              return rack.get(this._racksmeta.target(), callback);
             };
+            raw.listVirtualIPs = function(callback) {
+              return rack.get(this._racksmeta.target() + '/virtualips', callback);
+            };
+            raw.usage = function(callback) {
+              return rack.get(this._racksmeta.target()(' /usage/current', callback));
+            };
+            raw.sessionpersistence = {
+              list: function(callback) {
+                return rack.get(this._racksmeta.target() + '/sessionpersistence', callback);
+              },
+              enable: function(callback) {
+                return rack.put(this._racksmeta.target() + '/sessionpersistence', callback);
+              },
+              disable: function(callback) {
+                return rack["delete"](this._racksmeta.target() + '/sessionpersistence', callback);
+              }
+            };
+            raw.connectionlogging = {
+              list: function(callback) {
+                return rack.get(this._racksmeta.target() + '/connectionlogging', callback);
+              },
+              enable: function(callback) {
+                return rack.put(this._racksmeta.target() + '/connectionlogging?enabled=true', callback);
+              },
+              disable: function(callback) {
+                return rack.put(this._racksmeta.target() + '/connectionlogging?enabled=false', callback);
+              }
+            };
+            raw.listACL = function(callback) {
+              return rack.get(this._racksmeta.target() + '/accesslist', callback);
+            };
+            raw.nodes = rack.subResource(this, raw.id, 'nodes');
             return raw;
           }
         }
@@ -795,20 +849,31 @@
             plaintext: true
           },
           model: function(containerName) {
-            var catalog;
-            catalog = {
+            return {
               name: containerName,
               _racksmeta: {
                 name: containerName
+              },
+              listObjects: function(callback) {
+                return rack.https({
+                  method: 'GET',
+                  plaintext: true,
+                  url: this._racksmeta.target()
+                }, cb);
               }
             };
-            return catalog;
           }
         }
       };
       this.autoscale = {
         groups: {
           model: function(raw) {
+            raw.listPolicies = function(callback) {
+              return rack.get(this._racksmeta.target() + '/policies', callback);
+            };
+            raw.listConfigurations = function(callback) {
+              return rack.get(this._racksmeta.target() + '/config', callback);
+            };
             return raw;
           }
         }
@@ -853,7 +918,13 @@
           return rack.get(this._racksmeta.target() + '/volumes/detail', callback);
         },
         types: {
+          _racksmeta: {
+            replyString: 'volume_types'
+          },
           model: function(raw) {
+            raw.details = function(callback) {
+              return rack.get(this._racksmeta.target(), callback);
+            };
             return raw;
           }
         },
@@ -869,6 +940,36 @@
       this.cloudDatabases = {
         instances: {
           model: function(raw) {
+            raw.details = function(callback) {
+              return rack.get(this._racksmeta.target(), callback);
+            };
+            raw.action = function(options, callback) {
+              return rack.post(this._racksmeta.target() + '/action', options, callback);
+            };
+            raw.restart = function(callback) {
+              return raw.action({
+                restart: {}
+              }, callback);
+            };
+            raw.resize = function(flavorRef, callback) {
+              return raw.action({
+                resize: {
+                  "flavorRef": flavorRef
+                }
+              }, callback);
+            };
+            raw.listDatabases = function(callback) {
+              return rack.get(this._racksmeta.target() + '/databases', callback);
+            };
+            raw.listUsers = function(callback) {
+              return rack.get(this._racksmeta.target() + '/users', callback);
+            };
+            raw.listFlavors = function(callback) {
+              return rack.get(this._racksmeta.target() + '/flavors', callback);
+            };
+            raw.listBackups = function(callback) {
+              return rack.get(this._racksmeta.target() + '/backups', callback);
+            };
             return raw;
           }
         }
@@ -877,17 +978,28 @@
       this.cloudQueues = {
         queues: {
           model: function(raw) {
+            raw.listMessages = function(callback) {
+              return rack.get(this._racksmeta.target() + '/claims', callback);
+            };
             return raw;
           }
         }
       };
       this.cloudBackup = {
         configurations: {
+          _racksmeta: {
+            noResource: true,
+            resourceString: 'backup-configuration'
+          },
           model: function(raw) {
             return raw;
           }
         },
         agents: {
+          _racksmeta: {
+            noResource: true,
+            resourceString: 'user/agents'
+          },
           model: function(raw) {
             return raw;
           }
@@ -904,6 +1016,11 @@
             singular: 'domains'
           },
           model: function(raw) {
+            raw.details = function(callback) {
+              return rack.get(this._racksmeta.target(), callback);
+            };
+            raw.records = rack.subResource(this, raw.id, 'records');
+            raw.subdomains = rack.subResource(this, raw.id, 'subdomains');
             return raw;
           }
         },
@@ -917,30 +1034,57 @@
       this.cloudMonitoring = {
         entities: {
           model: function(raw) {
+            raw.listChecks = function(callback) {
+              return rack.get(this._racksmeta.target() + '/checks', callback);
+            };
+            raw.listAlarms = function(callback) {
+              return rack.get(this._racksmeta.target() + '/alarms', callback);
+            };
             return raw;
           }
         },
         audits: {
+          _racksmeta: {
+            replyString: 'values'
+          },
           model: function(raw) {
             return raw;
           }
         },
         checkTypes: {
+          _racksmeta: {
+            resourceString: 'check_types'
+          },
           model: function(raw) {
+            raw.details = function(callback) {
+              return rack.get(this._racksmeta.target(), callback);
+            };
             return raw;
           }
         },
         monitoringZones: {
+          _racksmeta: {
+            resourceString: 'monitoring_zones'
+          },
           model: function(raw) {
+            raw.details = function(callback) {
+              return rack.get(this._racksmeta.target(), callback);
+            };
             return raw;
           }
         },
         notifications: {
           model: function(raw) {
+            raw.details = function(callback) {
+              return rack.get(this._racksmeta.target(), callback);
+            };
             return raw;
           }
         },
         agents: {
+          _racksmeta: {
+            replyString: 'values'
+          },
           model: function(raw) {
             return raw;
           }

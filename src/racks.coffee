@@ -423,10 +423,18 @@ module.exports = class RacksJS
 						rack.get @_racksmeta.target(), (reply) -> callback(reply)
 					return raw
 		# http://docs.rackspace.com/servers/api/v1.0/cs-devguide/content/API_Operations-d1e1720.html
+		# This is very old stuff - First Gen servers. Never use this.
 		@cloudServers =
 			servers:
 				model: (raw) ->
+					raw.addresses = (callback) ->
+						rack.get @_racksmeta.target() + '/ips', callback
 					return raw
+			createImage: (options, callback) ->
+				if options.name? and options.serverId?
+					rack.post @_racksmeta.target() + 'images', { "image": options }, callback
+				else
+					rack.log 'Must provide "name" and "serverId" for firstgen.createImage({})'
 			images:
 				model: (raw) ->
 					return raw
@@ -436,12 +444,21 @@ module.exports = class RacksJS
 		# http://docs.rackspace.com/loadbalancers/api/v1.0/clb-devguide/content/API_Operations-d1e1354.html
 		@cloudLoadBalancers =
 			algorithms:
+				_racksmeta:
+					resourceString: 'loadbalancers/algorithms'
+					name: 'algorithms'
 				model: (raw) ->
 					return raw
 			alloweddomains:
+				_racksmeta:
+					resourceString: 'loadbalancers/alloweddomains'
+					name: 'alloweddomains'
 				model: (raw) ->
 					return raw
 			protocols:
+				_racksmeta:
+					resourceString: 'loadbalancers/protocols'
+					name: 'protocols'
 				model: (raw) ->
 					return raw
 			loadBalancers:
@@ -449,7 +466,21 @@ module.exports = class RacksJS
 					resourceString: 'loadbalancers'
 				model: (raw) ->
 					raw.details = (callback) ->
-						rack.get @_racksmeta.target(), (reply) -> callback(reply.server)
+						rack.get @_racksmeta.target(), callback
+					raw.listVirtualIPs = (callback) ->
+						rack.get @_racksmeta.target() + '/virtualips', callback
+					raw.usage = (callback) ->
+						rack.get @_racksmeta.target() ' /usage/current', callback
+					raw.sessionpersistence =
+						list: (callback) -> rack.get @_racksmeta.target() + '/sessionpersistence', callback
+						enable: (callback) -> rack.put @_racksmeta.target() + '/sessionpersistence', callback
+						disable: (callback) -> rack.delete @_racksmeta.target() + '/sessionpersistence', callback
+					raw.connectionlogging =
+						list: (callback) -> rack.get @_racksmeta.target() + '/connectionlogging', callback
+						enable: (callback) -> rack.put @_racksmeta.target() + '/connectionlogging?enabled=true', callback
+						disable: (callback) -> rack.put @_racksmeta.target() + '/connectionlogging?enabled=false', callback
+					raw.listACL = (callback) -> rack.get @_racksmeta.target() + '/accesslist', callback
+					raw.nodes = rack.subResource @, raw.id, 'nodes'
 					return raw
 		# http://docs.rackspace.com/files/api/v1/cf-devguide/content/API_Operations_for_CDN_Services-d1e2386.html
 		# FIXME: This should NOT be it's own product... Otherwise we duplicate a very large amount of code from RacksJS.cloudFiles
@@ -473,15 +504,25 @@ module.exports = class RacksJS
 					resourceString: ''
 					plaintext: yes
 				model: (containerName) ->
-					catalog =
+					return {
 						name: containerName
 						_racksmeta:
 							name: containerName
-					return catalog
+						listObjects: (callback) ->
+							rack.https({
+								method: 'GET',
+								plaintext: true,
+								url: this._racksmeta.target()
+							}, cb)
+					}
 		# http://docs.rackspace.com/cas/api/v1.0/autoscale-devguide/content/API_Operations.html
 		@autoscale =
 			groups:
 				model: (raw) ->
+					raw.listPolicies = (callback) ->
+						rack.get @_racksmeta.target() + '/policies', callback
+					raw.listConfigurations = (callback) ->
+						rack.get @_racksmeta.target() + '/config', callback
 					return raw
 		# http://docs.rackspace.com/cbs/api/v1.0/cbs-devguide/content/volume.html
 		@cloudBlockStorage =
@@ -503,7 +544,11 @@ module.exports = class RacksJS
 			volumeDetails: (callback) ->
 				rack.get @_racksmeta.target() + '/volumes/detail', callback
 			types:
+				_racksmeta:
+					replyString: 'volume_types'
 				model: (raw) ->
+					raw.details = (callback) ->
+						rack.get @_racksmeta.target(), callback
 					return raw
 			snapshots:
 				model: (raw) ->
@@ -514,6 +559,24 @@ module.exports = class RacksJS
 		@cloudDatabases =
 			instances:
 				model: (raw) ->
+					raw.details = (callback) ->
+						rack.get @_racksmeta.target(), callback
+					raw.action = (options, callback) ->
+						rack.post @_racksmeta.target() + '/action', options, callback
+					raw.restart = (callback) ->
+						raw.action { restart: {} }, callback
+					raw.resize = (flavorRef, callback) ->
+						raw.action { resize:
+							"flavorRef": flavorRef
+						}, callback
+					raw.listDatabases = (callback) ->
+						rack.get @_racksmeta.target() + '/databases', callback
+					raw.listUsers = (callback) ->
+						rack.get @_racksmeta.target() + '/users', callback
+					raw.listFlavors = (callback) ->
+						rack.get @_racksmeta.target() + '/flavors', callback
+					raw.listBackups = (callback) ->
+						rack.get @_racksmeta.target() + '/backups', callback
 					return raw
 		# NO DOCUMENTATION AVAILABLE
 		@cloudOrchestration = {}
@@ -521,13 +584,21 @@ module.exports = class RacksJS
 		@cloudQueues =
 			queues:
 				model: (raw) ->
+					raw.listMessages = (callback) ->
+						rack.get @_racksmeta.target() + '/claims', callback
 					return raw
 		# http://docs.rackspace.com/rcbu/api/v1.0/rcbu-devguide/content/operations.html
 		@cloudBackup =
 			configurations:
+				_racksmeta:
+					noResource: yes
+					resourceString: 'backup-configuration'
 				model: (raw) ->
 					return raw
 			agents:
+				_racksmeta:
+					noResource: yes
+					resourceString: 'user/agents'
 				model: (raw) ->
 					return raw
 		# http://docs.rackspace.com/cdns/api/v1.0/cdns-devguide/content/API_Operations-d1e2264.html
@@ -536,10 +607,13 @@ module.exports = class RacksJS
 				model: (raw) ->
 					return raw
 			domains:
-				_racksmeta: {
+				_racksmeta:
 					singular: 'domains'
-				}
 				model: (raw) ->
+					raw.details = (callback) ->
+						rack.get @_racksmeta.target(), callback
+					raw.records = rack.subResource @, raw.id, 'records'
+					raw.subdomains = rack.subResource @, raw.id, 'subdomains'
 					return raw
 			rdns:
 				model: (raw) ->
@@ -550,20 +624,38 @@ module.exports = class RacksJS
 		@cloudMonitoring =
 			entities:
 				model: (raw) ->
+					raw.listChecks = (callback) ->
+						rack.get @_racksmeta.target() + '/checks', callback
+					raw.listAlarms = (callback) ->
+						rack.get @_racksmeta.target() + '/alarms', callback
 					return raw
 			audits:
+				_racksmeta:
+					replyString: 'values'
 				model: (raw) ->
 					return raw
 			checkTypes:
+				_racksmeta:
+					resourceString: 'check_types'
 				model: (raw) ->
+					raw.details = (callback) ->
+						rack.get @_racksmeta.target(), callback
 					return raw
 			monitoringZones:
+				_racksmeta:
+					resourceString: 'monitoring_zones'
 				model: (raw) ->
+					raw.details = (callback) ->
+						rack.get @_racksmeta.target(), callback
 					return raw
 			notifications:
 				model: (raw) ->
+					raw.details = (callback) ->
+						rack.get @_racksmeta.target(), callback
 					return raw
 			agents:
+				_racksmeta:
+					replyString: 'values'
 				model: (raw) ->
 					return raw
 			notification_plans:

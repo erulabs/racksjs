@@ -32,10 +32,10 @@ new (require('../racks.js'))({
       'flavorRef': 'performance1-1',
       'imageRef': 'f70ed7c7-b42e-4d77-83d8-40fa29825b85',
     }, function (server) {
-        // Some functions, like .new() on almost everything, reply instantly and are not instantly read - like a server.
-        // so Racksjs provides helper functions:
+        // Since servers aren't ready right away, you need to poll until they're complete
+	// Racksjs provides helper functions for this:
         server.systemActive(function () {
-            // systemAction fires once the server is full built
+            // systemAction fires once the server is fully built
             server.reboot();
         });
     });
