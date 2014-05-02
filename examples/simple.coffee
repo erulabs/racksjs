@@ -16,14 +16,44 @@ new RacksJS {
   verbosity: 1
 }, (rs) ->
 
+	#rs.cloudMonitoring.entities.assume('ennd4Vpb5h').details (reply) ->
+	#	console.log reply
+
+	rs.cloudMonitoring.entities.assume('ennd4Vpb5h').update {
+		ip_addresses: {
+			public0_v4: '166.78.215.121'
+			private0_v4: '10.182.197.82'
+			access_ip1_v4: '166.78.215.121'
+		}
+	}, (reply) ->
+		console.log 'update reply:', reply
+
+	#rs.cloudMonitoring.entities.all (entities) ->
+	#	for ent in entities.values
+	#		if ent.label is "prodsm05"
+	#			console.log ent
+
+	#rs.cloudMonitoring.entities.new {
+	#	label: 'prodsm05'
+	#	ip_addresses: {
+	#		public0_v4: '166.78.215.121'
+	#		private0_v4: '10.182.197.82'
+	#		access_ip1_v4: '166.78.215.121'
+	#	}
+	#	managed: true
+	#	uri: 'https://servers.api.rackspacecloud.com/v1/ddi/servers/21412173'
+	#	metadata: {}
+	#}, (reply) ->
+	#	console.log arguments
+
 	#rs.cloudFilesCDN.containers.all (containers) ->
 	#	console.log containers
 
 	#rs.network = 'internal'
 	#rs.datacenter = 'IAD'
 
-	rs.cloudFiles.containers.all (containers) ->
-		console.log containers
+	#rs.cloudFiles.containers.all (containers) ->
+	#	console.log containers
 
 	#rs.nextgen.servers.all (servers) ->
 	#	console.log servers

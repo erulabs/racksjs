@@ -348,7 +348,11 @@
           return function(obj, callback) {
             var data, replyString;
             data = {};
-            data[resource._racksmeta.singular] = obj;
+            if (resource._racksmeta.dontWrap != null) {
+              data = obj;
+            } else {
+              data[resource._racksmeta.singular] = obj;
+            }
             if (resource._racksmeta.replyString != null) {
               replyString = resource._racksmeta.replyString;
             } else {
@@ -1033,7 +1037,19 @@
       this.cloudImages = {};
       this.cloudMonitoring = {
         entities: {
+          _racksmeta: {
+            dontWrap: true
+          },
           model: function(raw) {
+            raw.details = function(callback) {
+              return rack.get(this._racksmeta.target(), callback);
+            };
+            raw["delete"] = function(callback) {
+              return rack["delete"](this._racksmeta.target(), callback);
+            };
+            raw.update = function(options, callback) {
+              return rack.put(this._racksmeta.target(), options, callback);
+            };
             raw.listChecks = function(callback) {
               return rack.get(this._racksmeta.target() + '/checks', callback);
             };

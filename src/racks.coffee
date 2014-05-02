@@ -210,7 +210,11 @@ module.exports = class RacksJS
 				@buildModel(resource, obj)
 			resource.new = (obj, callback) =>
 				data = {}
-				data[resource._racksmeta.singular] = obj
+				# This is a bug with CloudMonitoring - post requests are NOT wrapped with the resource object title
+				if resource._racksmeta.dontWrap?
+					data = obj
+				else
+					data[resource._racksmeta.singular] = obj
 				if resource._racksmeta.replyString?
 					replyString = resource._racksmeta.replyString
 				else
@@ -623,7 +627,15 @@ module.exports = class RacksJS
 		# http://docs.rackspace.com/cm/api/v1.0/cm-devguide/content/service-api-operations.html
 		@cloudMonitoring =
 			entities:
+				_racksmeta:
+					dontWrap: yes
 				model: (raw) ->
+					raw.details = (callback) ->
+						rack.get @_racksmeta.target(), callback
+					raw.delete = (callback) ->
+						rack.delete @_racksmeta.target(), callback
+					raw.update = (options, callback) ->
+						rack.put @_racksmeta.target(), options, callback
 					raw.listChecks = (callback) ->
 						rack.get @_racksmeta.target() + '/checks', callback
 					raw.listAlarms = (callback) ->
