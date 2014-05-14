@@ -581,6 +581,8 @@ module.exports = class RacksJS
 						rack.get @_racksmeta.target() + '/flavors', callback
 					raw.listBackups = (callback) ->
 						rack.get @_racksmeta.target() + '/backups', callback
+					raw.enableRoot = (callback) ->
+						rack.post @_racksmeta.target() + '/root', '', callback
 					return raw
 		# NO DOCUMENTATION AVAILABLE
 		@cloudOrchestration = {}

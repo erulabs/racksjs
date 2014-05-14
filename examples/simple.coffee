@@ -13,20 +13,21 @@ RacksJS = require '../dist/racks.js'
 new RacksJS {
   username: process.argv[3]
   apiKey: process.argv[4]
-  verbosity: 1
+  verbosity: 5
 }, (rs) ->
+
+	rs.datacenter = 'DFW'
+
+	rs.cloudDatabases.instances.assume('53bf9382-a54d-4f8f-b157-f954f365be85').enableRoot (reply) ->
+		console.log reply
 
 	#rs.cloudMonitoring.entities.assume('ennd4Vpb5h').details (reply) ->
 	#	console.log reply
 
-	rs.cloudMonitoring.entities.assume('ennd4Vpb5h').update {
-		ip_addresses: {
-			public0_v4: '166.78.215.121'
-			private0_v4: '10.182.197.82'
-			access_ip1_v4: '166.78.215.121'
-		}
-	}, (reply) ->
-		console.log 'update reply:', reply
+	#rs.cloudMonitoring.entities.assume('ennd4Vpb5h').update {
+	#	agent_id: '21412173'
+	#}, (reply) ->
+	#	console.log 'update reply:', reply
 
 	#rs.cloudMonitoring.entities.all (entities) ->
 	#	for ent in entities.values
@@ -41,7 +42,7 @@ new RacksJS {
 	#		access_ip1_v4: '166.78.215.121'
 	#	}
 	#	managed: true
-	#	uri: 'https://servers.api.rackspacecloud.com/v1/ddi/servers/21412173'
+	#	uri: 'https://servers.api.rackspaceclclououd.com/v1/ddi/servers/21412173'
 	#	metadata: {}
 	#}, (reply) ->
 	#	console.log arguments

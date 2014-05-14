@@ -974,6 +974,9 @@
             raw.listBackups = function(callback) {
               return rack.get(this._racksmeta.target() + '/backups', callback);
             };
+            raw.enableRoot = function(callback) {
+              return rack.post(this._racksmeta.target() + '/root', '', callback);
+            };
             return raw;
           }
         }
