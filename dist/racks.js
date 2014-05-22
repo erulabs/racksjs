@@ -9,6 +9,7 @@
       this.https_node = require('https');
       this.url = require('url');
       this.fs = require('fs');
+      this.path = require('path');
       this.authToken = false;
       this.products = {};
       if (this.authObj == null) {
@@ -846,6 +847,8 @@
           }
         }
       };
+      this.cloudFilesCDN = {};
+      this.cloudBigData = {};
       this.cloudFiles = {
         containers: {
           _racksmeta: {
@@ -853,10 +856,19 @@
             plaintext: true
           },
           model: function(containerName) {
+            if (containerName.id != null) {
+              containerName = containerName.id;
+            }
+            if (containerName.name != null) {
+              containerName = containerName.name;
+            }
             return {
               name: containerName,
               _racksmeta: {
                 name: containerName
+              },
+              details: function(callback) {
+                return rack.get(this._racksmeta.target(), callback);
               },
               listObjects: function(callback) {
                 return rack.https({
@@ -864,7 +876,35 @@
                   plaintext: true,
                   url: this._racksmeta.target()
                 }, cb);
-              }
+              },
+              upload: (function(_this) {
+                return function(options, callback) {
+                  var apiStream, inputStream;
+                  if (options.headers == null) {
+                    options.headers = {};
+                  }
+                  if (options.file != null) {
+                    inputStream = rack.fs.createReadStream(options.file);
+                    options.headers['content-length'] = rack.fs.statSync(options.file).size;
+                  } else if (options.stream != null) {
+                    inputStream = options.stream;
+                  } else {
+                    return _this.log('ERROR: upload requires either a "file" option or a "stream" option');
+                  }
+                  if (options.container == null) {
+                    return _this.log('ERROR: upload requires a target "container"');
+                  }
+                  if (options.path == null) {
+                    options.path = rack.path.basename(options.file);
+                  }
+                  options.method = 'PUT';
+                  options.upload = true;
+                  options.url = _this._racksmeta.target();
+                  apiStream = rack.https_node.request(options, callback);
+                  inputStream.pipe(apiStream);
+                  return apiStream;
+                };
+              })(this)
             };
           }
         }
@@ -1037,7 +1077,52 @@
           }
         }
       };
-      this.cloudImages = {};
+      this.cloudImages = {
+        images: {
+          model: function(raw) {
+            raw.details = function(callback) {
+              return rack.get(this._racksmeta.target(), callback);
+            };
+            raw.members = function(callback) {
+              return rack.get(this._racksmeta.target() + '/members​', callback);
+            };
+            raw.addMember = function(tenant, callback) {
+              return rack.post(this._racksmeta.target() + '/members', {
+                "member": tenant
+              }, callback);
+            };
+            return raw;
+          }
+        },
+        tasks: {
+          model: function(raw) {
+            raw.details = function(callback) {
+              return rack.get(this._racksmeta.target(), callback);
+            };
+            return raw;
+          },
+          "import": function(imageName, imagePath, callback) {
+            return rack.post(this._racksmeta.target(), {
+              "type": "import",
+              "input": {
+                "image_properties": {
+                  "name": imageName
+                },
+                "import_from": imagePath
+              }
+            }, callback);
+          },
+          "export": function(imageUUID, container, callback) {
+            return rack.post(this._racksmeta.target(), {
+              "type": "export",
+              "input": {
+                "image_uuid": imageUUID,
+                "receiving_swift_container": container
+              }
+            }, callback);
+          }
+        }
+      };
       this.cloudMonitoring = {
         entities: {
           _racksmeta: {

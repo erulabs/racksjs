@@ -6,6 +6,7 @@ module.exports = class RacksJS
 		@https_node = require 'https'
 		@url = require 'url'
 		@fs = require 'fs'
+		@path = require 'path'
 		# Defaults
 		@authToken = no
 		@products = {}
@@ -205,7 +206,8 @@ module.exports = class RacksJS
 			resource.all = (callback) =>
 				@resourceRequest resource, callback
 			resource.assume = (obj) =>
-				if typeof obj is 'string' then obj = { id: obj }
+				if typeof obj is 'string'
+					obj = { id: obj }
 				if !obj.id? and !obj.name? then return @log '[INFO] .assume() relies on .target() which in turn requires the object argument to have a .id or .name - please define one or the other - alternatively you can pass a string, in which case skinny will assume youre providing an id'
 				@buildModel(resource, obj)
 			resource.new = (obj, callback) =>
@@ -500,6 +502,8 @@ module.exports = class RacksJS
 		#				_racksmeta:
 		#					name: containerName
 		#			return catalog
+		@cloudFilesCDN = {};
+		@cloudBigData = {};
 		# http://docs.rackspace.com/files/api/v1/cf-devguide/content/API_Operations_for_Storage_Services-d1e942.html
 		@cloudFiles =
 			containers:
@@ -508,16 +512,48 @@ module.exports = class RacksJS
 					resourceString: ''
 					plaintext: yes
 				model: (containerName) ->
+					if containerName.id?
+						containerName = containerName.id
+					if containerName.name?
+						containerName = containerName.name
 					return {
 						name: containerName
 						_racksmeta:
 							name: containerName
+						details: (callback) ->
+							rack.get @_racksmeta.target(), callback
 						listObjects: (callback) ->
 							rack.https({
 								method: 'GET',
 								plaintext: true,
 								url: this._racksmeta.target()
 							}, cb)
+						upload: (options, callback) =>
+							# @_racksmeta.name
+							if !options.headers?
+								options.headers = {}
+							if options.file?
+								inputStream = rack.fs.createReadStream(options.file)
+								options.headers['content-length'] = rack.fs.statSync(options.file).size
+							else if options.stream?
+								inputStream = options.stream
+							else
+								return @log 'ERROR: upload requires either a "file" option or a "stream" option'
+							if !options.container?
+								return @log 'ERROR: upload requires a target "container"'
+
+							if !options.path?
+								options.path = rack.path.basename(options.file)
+
+							options.method = 'PUT'
+							options.upload = true
+							options.url = this._racksmeta.target()
+
+							apiStream = rack.https_node.request options, callback
+							inputStream.pipe(apiStream)
+
+							return apiStream
+
 					}
 		# http://docs.rackspace.com/cas/api/v1.0/autoscale-devguide/content/API_Operations.html
 		@autoscale =
@@ -625,7 +661,41 @@ module.exports = class RacksJS
 				model: (raw) ->
 					return raw
 		# http://docs.rackspace.com/images/api/v2/ci-devguide/content/API_Operations.html
-		@cloudImages = {}
+		@cloudImages =
+			images:
+				model: (raw) ->
+					raw.details = (callback) ->
+						rack.get @_racksmeta.target(), callback
+					raw.members = (callback) ->
+						rack.get @_racksmeta.target() + '/members​', callback
+					raw.addMember = (tenant, callback) ->
+						rack.post @_racksmeta.target() + '/members', {
+							"member": tenant
+						}, callback
+					return raw
+			tasks:
+				model: (raw) ->
+					raw.details = (callback) ->
+						rack.get @_racksmeta.target(), callback
+					return raw
+				import: (imageName, imagePath, callback) ->
+					rack.post @_racksmeta.target(), {
+						"type": "import",
+						"input": {
+							"image_properties": {
+								"name": imageName
+							},
+							"import_from": imagePath
+						}
+					}, callback
+				export: (imageUUID, container, callback) ->
+					rack.post @_racksmeta.target(), {
+						"type": "export",
+						"input": {
+							"image_uuid": imageUUID,
+							"receiving_swift_container": container
+						}
+					}, callback
 		# http://docs.rackspace.com/cm/api/v1.0/cm-devguide/content/service-api-operations.html
 		@cloudMonitoring =
 			entities:

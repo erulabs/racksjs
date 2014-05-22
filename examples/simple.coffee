@@ -16,10 +16,18 @@ new RacksJS {
   verbosity: 5
 }, (rs) ->
 
-	rs.datacenter = 'DFW'
+	rs.datacenter = 'ORD'
 
-	rs.cloudDatabases.instances.assume('53bf9382-a54d-4f8f-b157-f954f365be85').enableRoot (reply) ->
+	rs.cloudFiles.containers.assume('racktest').details (reply) ->
 		console.log reply
+
+	#rs.nextgen.servers.assume('a65ed620-683e-42d9-8b13-f93c33810623').serverActions (list) ->
+	#	console.log list
+
+	#rs.datacenter = 'DFW'
+
+	#rs.cloudDatabases.instances.assume('53bf9382-a54d-4f8f-b157-f954f365be85').enableRoot (reply) ->
+	#	console.log reply
 
 	#rs.cloudMonitoring.entities.assume('ennd4Vpb5h').details (reply) ->
 	#	console.log reply
