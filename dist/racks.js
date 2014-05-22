@@ -4,7 +4,7 @@
 
   module.exports = RacksJS = (function() {
     function RacksJS(authObj, callback) {
-      var _ref;
+      var _ref, _ref1;
       this.authObj = authObj;
       this.https_node = require('https');
       this.url = require('url');
@@ -33,7 +33,10 @@
       } else {
         this.network = this.authObj.network;
       }
-      if ((_ref = this.network) !== 'private' && _ref !== 'internal') {
+      if ((_ref = this.network) === 'private' || _ref === 'servicenet') {
+        this.network = 'internal';
+      }
+      if ((_ref1 = this.network) !== 'public' && _ref1 !== 'internal') {
         this.network = 'public';
       }
       this.clr = {
@@ -1207,6 +1210,12 @@
             replyString: 'values'
           },
           model: function(raw) {
+            raw.details = function(callback) {
+              return rack.get(this._racksmeta.target(), callback);
+            };
+            raw.connections = function(callback) {
+              return rack.get(this._racksmeta.target() + '/connections', callback);
+            };
             return raw;
           }
         },

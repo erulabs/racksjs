@@ -26,7 +26,8 @@ module.exports = class RacksJS
 		else
 			@network = @authObj.network
 		# Fix a common mistake - the networks are 'public' and 'internal'...
-		if @network not in [ 'private', 'internal' ]
+		if @network in [ 'private', 'servicenet' ] then @network = 'internal'
+		if @network not in [ 'public', 'internal' ]
 			@network = 'public'
 		# Colors for console output:
 		@clr = { red: "\u001b[31m", blue: "\u001b[34m", green: "\u001b[32m", cyan: "\u001b[36m", gray: "\u001b[1;30m", reset: "\u001b[0m" }
@@ -753,6 +754,10 @@ module.exports = class RacksJS
 				_racksmeta:
 					replyString: 'values'
 				model: (raw) ->
+					raw.details = (callback) ->
+						rack.get @_racksmeta.target(), callback
+					raw.connections = (callback) ->
+						rack.get @_racksmeta.target() + '/connections', callback
 					return raw
 			notification_plans:
 				model: (raw) ->

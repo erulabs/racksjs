@@ -29,7 +29,7 @@ gulp.task('tests', function () {
 
 gulp.task('default', ['sources']);
 
-gulp.task('watch', function () {
+gulp.task('watch', ['sources', 'tests'], function () {
 	gulp.watch(source, ['sources']);
 	gulp.watch(test, ['tests']);
 });
