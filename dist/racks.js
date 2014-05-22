@@ -4,11 +4,12 @@
 
   module.exports = RacksJS = (function() {
     function RacksJS(authObj, callback) {
-      var _ref;
+      var _ref, _ref1;
       this.authObj = authObj;
       this.https_node = require('https');
       this.url = require('url');
       this.fs = require('fs');
+      this.path = require('path');
       this.authToken = false;
       this.products = {};
       if (this.authObj == null) {
@@ -32,7 +33,10 @@
       } else {
         this.network = this.authObj.network;
       }
-      if ((_ref = this.network) !== 'private' && _ref !== 'internal') {
+      if ((_ref = this.network) === 'private' || _ref === 'servicenet') {
+        this.network = 'internal';
+      }
+      if ((_ref1 = this.network) !== 'public' && _ref1 !== 'internal') {
         this.network = 'public';
       }
       this.clr = {
@@ -348,7 +352,11 @@
           return function(obj, callback) {
             var data, replyString;
             data = {};
-            data[resource._racksmeta.singular] = obj;
+            if (resource._racksmeta.dontWrap != null) {
+              data = obj;
+            } else {
+              data[resource._racksmeta.singular] = obj;
+            }
             if (resource._racksmeta.replyString != null) {
               replyString = resource._racksmeta.replyString;
             } else {
@@ -842,6 +850,8 @@
           }
         }
       };
+      this.cloudFilesCDN = {};
+      this.cloudBigData = {};
       this.cloudFiles = {
         containers: {
           _racksmeta: {
@@ -849,10 +859,19 @@
             plaintext: true
           },
           model: function(containerName) {
+            if (containerName.id != null) {
+              containerName = containerName.id;
+            }
+            if (containerName.name != null) {
+              containerName = containerName.name;
+            }
             return {
               name: containerName,
               _racksmeta: {
                 name: containerName
+              },
+              details: function(callback) {
+                return rack.get(this._racksmeta.target(), callback);
               },
               listObjects: function(callback) {
                 return rack.https({
@@ -860,6 +879,51 @@
                   plaintext: true,
                   url: this._racksmeta.target()
                 }, cb);
+              },
+              upload: function(options, callback) {
+                var apiStream, inputStream, url;
+                if (options == null) {
+                  options = {};
+                }
+                if (callback == null) {
+                  callback = function() {
+                    return false;
+                  };
+                }
+                if (options.headers == null) {
+                  options.headers = {};
+                }
+                if (options.file != null) {
+                  inputStream = rack.fs.createReadStream(options.file);
+                  options.headers['content-length'] = rack.fs.statSync(options.file).size;
+                } else if (options.stream != null) {
+                  inputStream = options.stream;
+                }
+                if (options.path == null) {
+                  if (options.file != null) {
+                    options.path = rack.path.basename(options.file);
+                  } else {
+                    options.path = 'STREAM';
+                  }
+                }
+                inputStream.on('response', function(response) {
+                  return response.headers = {
+                    'content-type': response.headers['content-type'],
+                    'content-length': response.headers['content-length']
+                  };
+                });
+                options.method = 'PUT';
+                options.headers['X-Auth-Token'] = rack.authToken;
+                options.upload = true;
+                url = rack.url.parse(this._racksmeta.target());
+                options.host = url.host;
+                options.path = url.path + '/' + options.path;
+                options.container = this.name;
+                apiStream = rack.https_node.request(options, callback);
+                if (inputStream) {
+                  inputStream.pipe(apiStream);
+                }
+                return apiStream;
               }
             };
           }
@@ -970,6 +1034,9 @@
             raw.listBackups = function(callback) {
               return rack.get(this._racksmeta.target() + '/backups', callback);
             };
+            raw.enableRoot = function(callback) {
+              return rack.post(this._racksmeta.target() + '/root', '', callback);
+            };
             return raw;
           }
         }
@@ -1030,10 +1097,67 @@
           }
         }
       };
-      this.cloudImages = {};
+      this.cloudImages = {
+        images: {
+          model: function(raw) {
+            raw.details = function(callback) {
+              return rack.get(this._racksmeta.target(), callback);
+            };
+            raw.members = function(callback) {
+              return rack.get(this._racksmeta.target() + '/members​', callback);
+            };
+            raw.addMember = function(tenant, callback) {
+              return rack.post(this._racksmeta.target() + '/members', {
+                "member": tenant
+              }, callback);
+            };
+            return raw;
+          }
+        },
+        tasks: {
+          model: function(raw) {
+            raw.details = function(callback) {
+              return rack.get(this._racksmeta.target(), callback);
+            };
+            return raw;
+          },
+          "import": function(imageName, imagePath, callback) {
+            return rack.post(this._racksmeta.target(), {
+              "type": "import",
+              "input": {
+                "image_properties": {
+                  "name": imageName
+                },
+                "import_from": imagePath
+              }
+            }, callback);
+          },
+          "export": function(imageUUID, container, callback) {
+            return rack.post(this._racksmeta.target(), {
+              "type": "export",
+              "input": {
+                "image_uuid": imageUUID,
+                "receiving_swift_container": container
+              }
+            }, callback);
+          }
+        }
+      };
       this.cloudMonitoring = {
         entities: {
+          _racksmeta: {
+            dontWrap: true
+          },
           model: function(raw) {
+            raw.details = function(callback) {
+              return rack.get(this._racksmeta.target(), callback);
+            };
+            raw["delete"] = function(callback) {
+              return rack["delete"](this._racksmeta.target(), callback);
+            };
+            raw.update = function(options, callback) {
+              return rack.put(this._racksmeta.target(), options, callback);
+            };
             raw.listChecks = function(callback) {
               return rack.get(this._racksmeta.target() + '/checks', callback);
             };
@@ -1086,6 +1210,12 @@
             replyString: 'values'
           },
           model: function(raw) {
+            raw.details = function(callback) {
+              return rack.get(this._racksmeta.target(), callback);
+            };
+            raw.connections = function(callback) {
+              return rack.get(this._racksmeta.target() + '/connections', callback);
+            };
             return raw;
           }
         },

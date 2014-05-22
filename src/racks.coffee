@@ -6,6 +6,7 @@ module.exports = class RacksJS
 		@https_node = require 'https'
 		@url = require 'url'
 		@fs = require 'fs'
+		@path = require 'path'
 		# Defaults
 		@authToken = no
 		@products = {}
@@ -25,7 +26,8 @@ module.exports = class RacksJS
 		else
 			@network = @authObj.network
 		# Fix a common mistake - the networks are 'public' and 'internal'...
-		if @network not in [ 'private', 'internal' ]
+		if @network in [ 'private', 'servicenet' ] then @network = 'internal'
+		if @network not in [ 'public', 'internal' ]
 			@network = 'public'
 		# Colors for console output:
 		@clr = { red: "\u001b[31m", blue: "\u001b[34m", green: "\u001b[32m", cyan: "\u001b[36m", gray: "\u001b[1;30m", reset: "\u001b[0m" }
@@ -205,12 +207,17 @@ module.exports = class RacksJS
 			resource.all = (callback) =>
 				@resourceRequest resource, callback
 			resource.assume = (obj) =>
-				if typeof obj is 'string' then obj = { id: obj }
+				if typeof obj is 'string'
+					obj = { id: obj }
 				if !obj.id? and !obj.name? then return @log '[INFO] .assume() relies on .target() which in turn requires the object argument to have a .id or .name - please define one or the other - alternatively you can pass a string, in which case skinny will assume youre providing an id'
 				@buildModel(resource, obj)
 			resource.new = (obj, callback) =>
 				data = {}
-				data[resource._racksmeta.singular] = obj
+				# This is a bug with CloudMonitoring - post requests are NOT wrapped with the resource object title
+				if resource._racksmeta.dontWrap?
+					data = obj
+				else
+					data[resource._racksmeta.singular] = obj
 				if resource._racksmeta.replyString?
 					replyString = resource._racksmeta.replyString
 				else
@@ -496,6 +503,8 @@ module.exports = class RacksJS
 		#				_racksmeta:
 		#					name: containerName
 		#			return catalog
+		@cloudFilesCDN = {};
+		@cloudBigData = {};
 		# http://docs.rackspace.com/files/api/v1/cf-devguide/content/API_Operations_for_Storage_Services-d1e942.html
 		@cloudFiles =
 			containers:
@@ -504,16 +513,60 @@ module.exports = class RacksJS
 					resourceString: ''
 					plaintext: yes
 				model: (containerName) ->
+					if containerName.id?
+						containerName = containerName.id
+					if containerName.name?
+						containerName = containerName.name
 					return {
 						name: containerName
 						_racksmeta:
 							name: containerName
+						details: (callback) ->
+							rack.get @_racksmeta.target(), callback
 						listObjects: (callback) ->
 							rack.https({
 								method: 'GET',
 								plaintext: true,
 								url: this._racksmeta.target()
 							}, cb)
+						upload: (options, callback) ->
+							if !options?
+								options = {};
+							if !callback?
+								callback = () -> return false
+							if !options.headers?
+								options.headers = {}
+							if options.file?
+								inputStream = rack.fs.createReadStream(options.file)
+								options.headers['content-length'] = rack.fs.statSync(options.file).size
+							else if options.stream?
+								inputStream = options.stream
+							
+							if !options.path?
+								if options.file?
+									options.path = rack.path.basename(options.file)
+								else
+									options.path = 'STREAM'
+
+							inputStream.on 'response', (response) ->
+								response.headers =
+									'content-type': response.headers['content-type']
+									'content-length': response.headers['content-length']
+
+							options.method = 'PUT'
+							options.headers['X-Auth-Token'] = rack.authToken
+							options.upload = true
+							url = rack.url.parse this._racksmeta.target()
+							options.host = url.host
+							options.path = url.path + '/' + options.path
+							options.container = this.name
+
+							apiStream = rack.https_node.request options, callback
+							if inputStream
+								inputStream.pipe(apiStream)
+
+							return apiStream
+
 					}
 		# http://docs.rackspace.com/cas/api/v1.0/autoscale-devguide/content/API_Operations.html
 		@autoscale =
@@ -577,6 +630,8 @@ module.exports = class RacksJS
 						rack.get @_racksmeta.target() + '/flavors', callback
 					raw.listBackups = (callback) ->
 						rack.get @_racksmeta.target() + '/backups', callback
+					raw.enableRoot = (callback) ->
+						rack.post @_racksmeta.target() + '/root', '', callback
 					return raw
 		# NO DOCUMENTATION AVAILABLE
 		@cloudOrchestration = {}
@@ -619,11 +674,53 @@ module.exports = class RacksJS
 				model: (raw) ->
 					return raw
 		# http://docs.rackspace.com/images/api/v2/ci-devguide/content/API_Operations.html
-		@cloudImages = {}
+		@cloudImages =
+			images:
+				model: (raw) ->
+					raw.details = (callback) ->
+						rack.get @_racksmeta.target(), callback
+					raw.members = (callback) ->
+						rack.get @_racksmeta.target() + '/members​', callback
+					raw.addMember = (tenant, callback) ->
+						rack.post @_racksmeta.target() + '/members', {
+							"member": tenant
+						}, callback
+					return raw
+			tasks:
+				model: (raw) ->
+					raw.details = (callback) ->
+						rack.get @_racksmeta.target(), callback
+					return raw
+				import: (imageName, imagePath, callback) ->
+					rack.post @_racksmeta.target(), {
+						"type": "import",
+						"input": {
+							"image_properties": {
+								"name": imageName
+							},
+							"import_from": imagePath
+						}
+					}, callback
+				export: (imageUUID, container, callback) ->
+					rack.post @_racksmeta.target(), {
+						"type": "export",
+						"input": {
+							"image_uuid": imageUUID,
+							"receiving_swift_container": container
+						}
+					}, callback
 		# http://docs.rackspace.com/cm/api/v1.0/cm-devguide/content/service-api-operations.html
 		@cloudMonitoring =
 			entities:
+				_racksmeta:
+					dontWrap: yes
 				model: (raw) ->
+					raw.details = (callback) ->
+						rack.get @_racksmeta.target(), callback
+					raw.delete = (callback) ->
+						rack.delete @_racksmeta.target(), callback
+					raw.update = (options, callback) ->
+						rack.put @_racksmeta.target(), options, callback
 					raw.listChecks = (callback) ->
 						rack.get @_racksmeta.target() + '/checks', callback
 					raw.listAlarms = (callback) ->
@@ -657,6 +754,10 @@ module.exports = class RacksJS
 				_racksmeta:
 					replyString: 'values'
 				model: (raw) ->
+					raw.details = (callback) ->
+						rack.get @_racksmeta.target(), callback
+					raw.connections = (callback) ->
+						rack.get @_racksmeta.target() + '/connections', callback
 					return raw
 			notification_plans:
 				model: (raw) ->
