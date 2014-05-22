@@ -9,6 +9,8 @@
 #
 # 	coffee nextgen_server.coffee -n API_USERNAME API_KEY
 #
+request = require 'request'
+
 RacksJS = require '../dist/racks.js'
 new RacksJS {
   username: process.argv[3]
@@ -16,10 +18,21 @@ new RacksJS {
   verbosity: 5
 }, (rs) ->
 
-	rs.datacenter = 'ORD'
+	rs.datacenter = 'IAD'
 
-	rs.cloudFiles.containers.assume('racktest').details (reply) ->
-		console.log reply
+	# Stream a file to cloud files:
+	
+	rs.cloudFiles.containers.assume('image_mover_dest').upload {
+		stream: request("https://storage101.dfw1.clouddrive.com/v1/MossoCloudFS_907995/image_mover/977a4e0b-e6eb-4509-be09-4b6c72792b2f.vhd?temp_url_sig=041a65f01f0846540a68a428bb55050dad2cdd67&temp_url_expires=1400805151"),
+		path: '977a4e0b-e6eb-4509-be09-4b6c72792b2f.vhd'
+	}, (reply) ->
+		console.log reply.statusCode
+
+	# Upload a file to a cloud files container with an assumed named:
+	#rs.cloudFiles.containers.assume('racktest').upload {
+	#	file: 'dns.coffee'
+	#}, (reply) ->
+	#	console.log reply.statusCode
 
 	#rs.nextgen.servers.assume('a65ed620-683e-42d9-8b13-f93c33810623').serverActions (list) ->
 	#	console.log list

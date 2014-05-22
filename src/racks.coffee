@@ -528,8 +528,11 @@ module.exports = class RacksJS
 								plaintext: true,
 								url: this._racksmeta.target()
 							}, cb)
-						upload: (options, callback) =>
-							# @_racksmeta.name
+						upload: (options, callback) ->
+							if !options?
+								options = {};
+							if !callback?
+								callback = () -> return false
 							if !options.headers?
 								options.headers = {}
 							if options.file?
@@ -537,20 +540,29 @@ module.exports = class RacksJS
 								options.headers['content-length'] = rack.fs.statSync(options.file).size
 							else if options.stream?
 								inputStream = options.stream
-							else
-								return @log 'ERROR: upload requires either a "file" option or a "stream" option'
-							if !options.container?
-								return @log 'ERROR: upload requires a target "container"'
-
+							
 							if !options.path?
-								options.path = rack.path.basename(options.file)
+								if options.file?
+									options.path = rack.path.basename(options.file)
+								else
+									options.path = 'STREAM'
+
+							inputStream.on 'response', (response) ->
+								response.headers =
+									'content-type': response.headers['content-type']
+									'content-length': response.headers['content-length']
 
 							options.method = 'PUT'
+							options.headers['X-Auth-Token'] = rack.authToken
 							options.upload = true
-							options.url = this._racksmeta.target()
+							url = rack.url.parse this._racksmeta.target()
+							options.host = url.host
+							options.path = url.path + '/' + options.path
+							options.container = this.name
 
 							apiStream = rack.https_node.request options, callback
-							inputStream.pipe(apiStream)
+							if inputStream
+								inputStream.pipe(apiStream)
 
 							return apiStream
 

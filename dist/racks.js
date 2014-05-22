@@ -877,34 +877,51 @@
                   url: this._racksmeta.target()
                 }, cb);
               },
-              upload: (function(_this) {
-                return function(options, callback) {
-                  var apiStream, inputStream;
-                  if (options.headers == null) {
-                    options.headers = {};
-                  }
+              upload: function(options, callback) {
+                var apiStream, inputStream, url;
+                if (options == null) {
+                  options = {};
+                }
+                if (callback == null) {
+                  callback = function() {
+                    return false;
+                  };
+                }
+                if (options.headers == null) {
+                  options.headers = {};
+                }
+                if (options.file != null) {
+                  inputStream = rack.fs.createReadStream(options.file);
+                  options.headers['content-length'] = rack.fs.statSync(options.file).size;
+                } else if (options.stream != null) {
+                  inputStream = options.stream;
+                }
+                if (options.path == null) {
                   if (options.file != null) {
-                    inputStream = rack.fs.createReadStream(options.file);
-                    options.headers['content-length'] = rack.fs.statSync(options.file).size;
-                  } else if (options.stream != null) {
-                    inputStream = options.stream;
-                  } else {
-                    return _this.log('ERROR: upload requires either a "file" option or a "stream" option');
-                  }
-                  if (options.container == null) {
-                    return _this.log('ERROR: upload requires a target "container"');
-                  }
-                  if (options.path == null) {
                     options.path = rack.path.basename(options.file);
+                  } else {
+                    options.path = 'STREAM';
                   }
-                  options.method = 'PUT';
-                  options.upload = true;
-                  options.url = _this._racksmeta.target();
-                  apiStream = rack.https_node.request(options, callback);
+                }
+                inputStream.on('response', function(response) {
+                  return response.headers = {
+                    'content-type': response.headers['content-type'],
+                    'content-length': response.headers['content-length']
+                  };
+                });
+                options.method = 'PUT';
+                options.headers['X-Auth-Token'] = rack.authToken;
+                options.upload = true;
+                url = rack.url.parse(this._racksmeta.target());
+                options.host = url.host;
+                options.path = url.path + '/' + options.path;
+                options.container = this.name;
+                apiStream = rack.https_node.request(options, callback);
+                if (inputStream) {
                   inputStream.pipe(apiStream);
-                  return apiStream;
-                };
-              })(this)
+                }
+                return apiStream;
+              }
             };
           }
         }
