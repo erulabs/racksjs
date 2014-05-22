@@ -22,11 +22,13 @@ new RacksJS {
 
 	# Stream a file to cloud files:
 	
-	rs.cloudFiles.containers.assume('image_mover_dest').upload {
-		stream: request("https://storage101.dfw1.clouddrive.com/v1/MossoCloudFS_907995/image_mover/977a4e0b-e6eb-4509-be09-4b6c72792b2f.vhd?temp_url_sig=041a65f01f0846540a68a428bb55050dad2cdd67&temp_url_expires=1400805151"),
-		path: '977a4e0b-e6eb-4509-be09-4b6c72792b2f.vhd'
-	}, (reply) ->
-		console.log reply.statusCode
+
+
+	#rs.cloudFiles.containers.assume('image_mover_dest').upload {
+	#	stream: request("someURL"),
+	#	path: 'filename.ext'
+	#}, (reply) ->
+	#	console.log reply.statusCode
 
 	# Upload a file to a cloud files container with an assumed named:
 	#rs.cloudFiles.containers.assume('racktest').upload {
@@ -56,14 +58,14 @@ new RacksJS {
 	#			console.log ent
 
 	#rs.cloudMonitoring.entities.new {
-	#	label: 'prodsm05'
+	#	label: ''
 	#	ip_addresses: {
-	#		public0_v4: '166.78.215.121'
-	#		private0_v4: '10.182.197.82'
-	#		access_ip1_v4: '166.78.215.121'
+	#		public0_v4: ''
+	#		private0_v4: ''
+	#		access_ip1_v4: ''
 	#	}
 	#	managed: true
-	#	uri: 'https://servers.api.rackspaceclclououd.com/v1/ddi/servers/21412173'
+	#	uri: ''
 	#	metadata: {}
 	#}, (reply) ->
 	#	console.log arguments
@@ -125,4 +127,4 @@ new RacksJS {
 	#}, (reply) ->
 	#	console.log reply
 
-	#rs.servers.assume('8347e953-c865-4742-b0a8-96f2903a89cf').setMetadata { 'RackConnectPublicIP': '50.56.51.194 }
+	#rs.servers.assume('8347e953-c865-4742-b0a8-96f2903a89cf').setMetadata { 'RackConnectPublicIP': 'IPV4_HERE }
