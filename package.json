@@ -4,7 +4,7 @@
   "author": "Seandon Mooy",
   "email": "seandon.mooy@gmail.com",
   "contributors": [ "Matt Ellsworth" ],
-  "version": "0.2.0",
+  "version": "0.2.1",
   "main": "./dist/racks.js",
   "keywords": [
     "rackspace",
