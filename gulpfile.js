@@ -1,35 +1,43 @@
 // SkinnyJS Gulpfile
 "use strict";
 
-var source = [ 'src/**/*.coffee' ],
+var source = [ 'src/racks.coffee' ],
+	products = [ 'src/products/*.coffee' ],
 	test = [ 'test/**/*.coffee' ],
-    dest = 'dist',
-    gulp = require('gulp'),
-    coffee = require('gulp-coffee'),
-    uglify = require('gulp-uglify'),
-    concat = require('gulp-concat'),
-    rename = require('gulp-rename');
+	dest = 'dist',
+	gulp = require('gulp'),
+	coffee = require('gulp-coffee'),
+	uglify = require('gulp-uglify'),
+	concat = require('gulp-concat'),
+	rename = require('gulp-rename'),
+	gutil = require('gulp-util');
 
 gulp.task('sources', function () {
 	return gulp.src(source)
 		.pipe(coffee())
-		.pipe(concat('racks.js'))
 		.pipe(gulp.dest(dest))
-		.pipe(rename('racks.min.js'))
-		.pipe(uglify())
-		.pipe(gulp.dest(dest));
+		.on('error', gutil.log);
+});
+
+gulp.task('products', function () {
+	return gulp.src(products)
+		.pipe(coffee())
+		.pipe(gulp.dest(dest + '/products'))
+		.on('error', gutil.log);
 });
 
 gulp.task('tests', function () {
 	return gulp.src(test)
 		.pipe(coffee())
 		.pipe(concat('test.js'))
-		.pipe(gulp.dest('test'));
+		.pipe(gulp.dest('test'))
+		.on('error', gutil.log);
 });
 
-gulp.task('default', ['sources']);
+gulp.task('default', ['sources', 'products']);
 
 gulp.task('watch', ['sources', 'tests'], function () {
 	gulp.watch(source, ['sources']);
+	gulp.watch(products, ['products']);
 	gulp.watch(test, ['tests']);
 });
