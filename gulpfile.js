@@ -1,7 +1,7 @@
 // SkinnyJS Gulpfile
 "use strict";
 
-var source = [ 'src/racks.coffee' ],
+var source = [ 'src/racks.coffee', 'src/utils.coffee' ],
 	products = [ 'src/products/*.coffee' ],
 	test = [ 'test/**/*.coffee' ],
 	dest = 'dist',

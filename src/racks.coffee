@@ -365,6 +365,10 @@ module.exports = class RacksJS
 		# http://docs.rackspace.com/cm/api/v1.0/cm-devguide/content/service-api-operations.html
 		@cloudMonitoring = require('./products/cloudMonitoring.js');
 
+		# Include utilties - these are common and useful RacksJS scripts meant primarily for use by Rackers
+		# but Rackspace customers may also find them useful.
+		@utils = require('./utils.coffee');
+
 		# Shortcuts:
 		@servers = @cloudServersOpenStack.servers
 		@networks = @cloudServersOpenStack.networks
