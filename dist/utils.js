@@ -1,12 +1,15 @@
 (function() {
   "use strict";
-  module.exports = {
-    exportImageToAcct: function(imageUUID, target) {
-      return true;
-    },
-    setServerStatusActive: function(serverUUID) {
-      return true;
-    }
-  };
+
+  /*
+  module.exports =
+  	exportImageToAcct: (imageUUID, target) ->
+  		 * target.datacenter
+  		 * target.account
+  		return true
+  	setServerStatusActive: (serverUUID) ->
+  		return true
+   */
+
 
 }).call(this);

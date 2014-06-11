@@ -367,7 +367,7 @@ module.exports = class RacksJS
 
 		# Include utilties - these are common and useful RacksJS scripts meant primarily for use by Rackers
 		# but Rackspace customers may also find them useful.
-		@utils = require('./utils.coffee');
+		@utils = require('./utils.js');
 
 		# Shortcuts:
 		@servers = @cloudServersOpenStack.servers

@@ -510,7 +510,7 @@
       this.cloudDNS = require('./products/cloudDNS.js');
       this.cloudImages = require('./products/cloudImages.js');
       this.cloudMonitoring = require('./products/cloudMonitoring.js');
-      this.utils = require('./utils.coffee');
+      this.utils = require('./utils.js');
       this.servers = this.cloudServersOpenStack.servers;
       this.networks = this.cloudServersOpenStack.networks;
       this.ngservers = this.cloudServersOpenStack.servers;

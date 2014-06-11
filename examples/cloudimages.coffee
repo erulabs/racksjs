@@ -20,7 +20,3 @@ new RacksJS {
 
 	rs.cloudImages.tasks.assume('fa48ca9f-6b6e-4ffe-a380-bcf37247ff7f').details (reply) ->
 		console.log reply
-
-
-
-

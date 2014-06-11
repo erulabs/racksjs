@@ -20,6 +20,8 @@ new RacksJS {
 
 	log = console.log
 
+
+	log rs.access
 	# You can change datacenters or network targets at any time.
 	# Every call makes its own lookup via a .target() method in a _racksmeta object
 	# which is appended to every instance of every product object
