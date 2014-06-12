@@ -23,6 +23,9 @@
       if (this.authObj.endpoint == null) {
         this.authObj.endpoint = 'https://identity.api.rackspacecloud.com/v2.0';
       }
+      if (this.authObj.endpoint === 'https://lon.identity.api.rackspacecloud.com/v2.0') {
+        this.datacenter = 'LON';
+      }
       if (this.authObj.test == null) {
         this.test = false;
       } else {
@@ -75,8 +78,12 @@
       return console.log.apply(this, arguments);
     };
 
+    RacksJS.prototype.logerror = function(message) {
+      return this.log(this.clr.red + 'Error' + this.clr.reset + ':', message);
+    };
+
     RacksJS.prototype.https = function(opts, callback) {
-      var plaintext, request;
+      var e, plaintext, request;
       if (opts.headers == null) {
         opts.headers = {};
       }
@@ -88,7 +95,12 @@
       opts.headers['Content-Type'] = 'application/json';
       if (opts.data != null) {
         if (typeof opts.data === 'object') {
-          opts.data = JSON.stringify(opts.data);
+          try {
+            opts.data = JSON.stringify(opts.data);
+          } catch (_error) {
+            e = _error;
+            console.log(e);
+          }
         }
         opts.headers['Content-Length'] = opts.data.length;
       }
@@ -131,7 +143,9 @@
               if (_this.verbosity > 0 && _this.verbosity < 4) {
                 _this.log(_this.clr.green + 'Reply' + _this.clr.reset + ':', response.statusCode, _this.httpCodes[response.statusCode]);
               } else if (_this.verbosity > 3) {
-                _this.log(_this.clr.green + 'Reply' + _this.clr.reset + ':', reply);
+                _this.log(_this.clr.green + 'Reply' + _this.clr.reset + ':', response.statusCode, _this.httpCodes[response.statusCode]);
+                _this.log('--->', _this.clr.cyan + 'Headers' + _this.clr.reset + ":\n", response.headers);
+                _this.log('--->', _this.clr.cyan + 'Body' + _this.clr.reset + ":\n", reply);
               }
               return callback(reply);
             });
@@ -348,34 +362,40 @@
             return _this.buildModel(resource, obj);
           };
         })(this);
-        resource["new"] = (function(_this) {
-          return function(obj, callback) {
-            var data, replyString;
-            data = {};
-            if (resource._racksmeta.dontWrap != null) {
-              data = obj;
-            } else {
-              data[resource._racksmeta.singular] = obj;
-            }
-            if (resource._racksmeta.replyString != null) {
-              replyString = resource._racksmeta.replyString;
-            } else {
-              replyString = resource._racksmeta.name;
-            }
-            return rack.post(resource._racksmeta.target(), data, function(reply) {
-              if (reply[replyString] != null) {
-                obj = reply[replyString];
-              } else if (reply[resource._racksmeta.singular] != null) {
-                obj = reply[resource._racksmeta.singular];
+        if (resource["new"] != null) {
+          resource["new"] = resource["new"](rack);
+        } else {
+          resource["new"] = (function(_this) {
+            return function(obj, callback) {
+              var data, replyString;
+              data = {};
+              if (resource._racksmeta.dontWrap != null) {
+                data = obj;
               } else {
-                return callback(reply);
+                data[resource._racksmeta.singular] = obj;
               }
-              if (callback != null) {
-                return callback(rack.buildModel(resource, obj));
+              if (resource._racksmeta.replyString != null) {
+                replyString = resource._racksmeta.replyString;
+              } else {
+                replyString = resource._racksmeta.name;
               }
-            });
-          };
-        })(this);
+              return rack.post(resource._racksmeta.target(), data, function(reply) {
+                if (reply[replyString] != null) {
+                  obj = reply[replyString];
+                } else if (reply[resource._racksmeta.singular] != null) {
+                  obj = reply[resource._racksmeta.singular];
+                } else {
+                  if (callback != null) {
+                    return callback(reply);
+                  }
+                }
+                if (callback != null) {
+                  return callback(rack.buildModel(resource, obj));
+                }
+              });
+            };
+          })(this);
+        }
       }
       return resource;
     };

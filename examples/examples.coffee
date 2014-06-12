@@ -15,25 +15,28 @@ RacksJS = require '../dist/racks.js'
 new RacksJS {
   username: process.argv[3]
   apiKey: process.argv[4]
-  verbosity: 1
+  verbosity: 5
+  # To auth against LON
+  endpoint: 'https://lon.identity.api.rackspacecloud.com/v2.0'
 }, (rs) ->
 
 	log = console.log
 
-
-	log rs.access
 	# You can change datacenters or network targets at any time.
 	# Every call makes its own lookup via a .target() method in a _racksmeta object
 	# which is appended to every instance of every product object
 	# .target() is called before every HTTP request, so simply change the
 	#
-	rs.datacenter = 'ORD' # valid values are ORD, IAD, DFW, LON, AUS, HKG
+	rs.datacenter = 'LON' # valid values are ORD, IAD, DFW, LON, AUS, HKG
 	#
 	# or the
 	#
 	rs.network = 'public' # valid values are public and internal
 	#
 	# at any time.
+
+	rs.nextgen.servers.all (reply) ->
+		log reply
 
 	# Lets get to some cool stuff
 
@@ -51,6 +54,9 @@ new RacksJS {
 	#		file: 'path_of_file_to_upload'
 	#	}, (reply) ->
 	#		console.log reply.statusCode
+
+	# rs.cloudFiles.containers.new { name: 'somenewTestContainer' }
+
 
 	# CLOUD MONITORING
 

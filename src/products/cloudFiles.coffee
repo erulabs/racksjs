@@ -6,6 +6,20 @@ module.exports =
 			# Containers are accessed with a GET directly to the storage endpoint - ie: there is no URL path beyond the product base
 			resourceString: ''
 			plaintext: yes
+		'new': (rack) ->
+			return (options, callback) ->
+				if typeof options is 'string'
+					name = options
+				else if options.name?
+					name = options.name
+				else if options.id?
+					name = options.id
+				else
+					rack.logerror 'New Cloud Files containers require at least a name or id'
+					return false
+				rack.put @_racksmeta.target() + name, {}, (reply) ->
+					if callback?
+						callback reply
 		model: (containerName) ->
 			if containerName.id?
 				containerName = containerName.id

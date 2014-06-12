@@ -34,9 +34,9 @@ gulp.task('tests', function () {
 		.on('error', gutil.log);
 });
 
-gulp.task('default', ['sources', 'products']);
+gulp.task('default', ['sources', 'tests', 'products']);
 
-gulp.task('watch', ['sources', 'tests'], function () {
+gulp.task('watch', ['default'], function () {
 	gulp.watch(source, ['sources']);
 	gulp.watch(products, ['products']);
 	gulp.watch(test, ['tests']);

@@ -19,6 +19,9 @@ module.exports = class RacksJS
 		# Default endpoint (Rackspace v2.0 api)
 		unless @authObj.endpoint?
 			@authObj.endpoint = 'https://identity.api.rackspacecloud.com/v2.0'
+		# If we're using the LON endpoint, set the datacenter there automatically
+		if @authObj.endpoint is 'https://lon.identity.api.rackspacecloud.com/v2.0'
+			@datacenter = 'LON'
 		# Test mode
 		if !@authObj.test? then @test = no else @test = @authObj.test
 		unless @authObj.network?
@@ -52,6 +55,8 @@ module.exports = class RacksJS
 		date = new Date()
 		process.stdout.write(date.getMonth() + '/' + date.getDate() + ' ' + date.toTimeString().split(' ')[0] + ' ')
 		console.log.apply(@, arguments)
+	logerror: (message) ->
+		@log @clr.red + 'Error' + @clr.reset + ':', message
 	https: (opts, callback) ->
 		if !opts.headers? then opts.headers = {}
 		# Save the plaintext option, but don't pass it along to HTTPS
@@ -63,7 +68,9 @@ module.exports = class RacksJS
 		opts.headers['Content-Type'] = 'application/json'
 		# If we have data, JSON.stringify if needed and calc length
 		if opts.data?
-			if typeof opts.data is 'object' then opts.data = JSON.stringify(opts.data)
+			if typeof opts.data is 'object'
+				try opts.data = JSON.stringify(opts.data)
+				catch e then console.log e
 			opts.headers['Content-Length'] = opts.data.length
 		# Parse the passed URL for easy use with Node's HTTPS, but don't pass along the unneeded full URL
 		opts.url = @url.parse opts.url
@@ -101,7 +108,9 @@ module.exports = class RacksJS
 					if @verbosity > 0 and @verbosity < 4
 						@log @clr.green + 'Reply' + @clr.reset + ':', response.statusCode, @httpCodes[response.statusCode]
 					else if @verbosity > 3
-						@log @clr.green + 'Reply' + @clr.reset + ':', reply
+						@log @clr.green + 'Reply' + @clr.reset + ':', response.statusCode, @httpCodes[response.statusCode]
+						@log '--->', @clr.cyan + 'Headers' + @clr.reset + ":\n", response.headers
+						@log '--->', @clr.cyan + 'Body' + @clr.reset + ":\n", reply
 					callback reply
 				response.on 'error', (error) => @log error, opts
 			# Write data down the pipe (in the case of POST and PUTs, etc)
@@ -211,26 +220,30 @@ module.exports = class RacksJS
 					obj = { id: obj }
 				if !obj.id? and !obj.name? then return @log '[INFO] .assume() relies on .target() which in turn requires the object argument to have a .id or .name - please define one or the other - alternatively you can pass a string, in which case skinny will assume youre providing an id'
 				@buildModel(resource, obj)
-			resource.new = (obj, callback) =>
-				data = {}
-				# This is a bug with CloudMonitoring - post requests are NOT wrapped with the resource object title
-				if resource._racksmeta.dontWrap?
-					data = obj
-				else
-					data[resource._racksmeta.singular] = obj
-				if resource._racksmeta.replyString?
-					replyString = resource._racksmeta.replyString
-				else
-					replyString = resource._racksmeta.name
-				rack.post resource._racksmeta.target(), data, (reply) =>
-					if reply[replyString]?
-						obj = reply[replyString]
-					else if reply[resource._racksmeta.singular]?
-						obj = reply[resource._racksmeta.singular]
+			if resource.new?
+				resource.new = resource.new(rack)
+			else
+				resource.new = (obj, callback) =>
+					data = {}
+					# This is a bug with CloudMonitoring - post requests are NOT wrapped with the resource object title
+					if resource._racksmeta.dontWrap?
+						data = obj
 					else
-						return callback(reply)
-					if callback?
-						callback(rack.buildModel(resource, obj))
+						data[resource._racksmeta.singular] = obj
+					if resource._racksmeta.replyString?
+						replyString = resource._racksmeta.replyString
+					else
+						replyString = resource._racksmeta.name
+					rack.post resource._racksmeta.target(), data, (reply) =>
+						if reply[replyString]?
+							obj = reply[replyString]
+						else if reply[resource._racksmeta.singular]?
+							obj = reply[resource._racksmeta.singular]
+						else
+							if callback?
+								return callback(reply)
+						if callback?
+							callback(rack.buildModel(resource, obj))
 		return resource
 	buildCatalog: (serviceCatalog) ->
 		rack = @
