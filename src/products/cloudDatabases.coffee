@@ -1,6 +1,6 @@
 "use strict";
 # http://docs.rackspace.com/cdb/api/v1.0/cdb-devguide/content/API_Operations-d1e2264.html
-module.exports = 
+module.exports = (rack) ->
 	instances:
 		model: (raw) ->
 			raw.details = (callback) ->

@@ -1,15 +1,14 @@
 (function() {
   "use strict";
-
-  /*
-  module.exports =
-  	exportImageToAcct: (imageUUID, target) ->
-  		 * target.datacenter
-  		 * target.account
-  		return true
-  	setServerStatusActive: (serverUUID) ->
-  		return true
-   */
-
+  module.exports = function(rack) {
+    return {
+      exportImageToAcct: function(imageUUID, target) {
+        return true;
+      },
+      setServerStatusActive: function(serverUUID) {
+        return true;
+      }
+    };
+  };
 
 }).call(this);

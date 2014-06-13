@@ -1,104 +1,106 @@
 (function() {
   "use strict";
-  module.exports = {
-    entities: {
-      _racksmeta: {
-        dontWrap: true
+  module.exports = function(rack) {
+    return {
+      entities: {
+        _racksmeta: {
+          dontWrap: true
+        },
+        model: function(raw) {
+          raw.details = function(callback) {
+            return rack.get(this._racksmeta.target(), callback);
+          };
+          raw["delete"] = function(callback) {
+            return rack["delete"](this._racksmeta.target(), callback);
+          };
+          raw.update = function(options, callback) {
+            return rack.put(this._racksmeta.target(), options, callback);
+          };
+          raw.listChecks = function(callback) {
+            return rack.get(this._racksmeta.target() + '/checks', callback);
+          };
+          raw.listAlarms = function(callback) {
+            return rack.get(this._racksmeta.target() + '/alarms', callback);
+          };
+          return raw;
+        }
       },
-      model: function(raw) {
-        raw.details = function(callback) {
-          return rack.get(this._racksmeta.target(), callback);
-        };
-        raw["delete"] = function(callback) {
-          return rack["delete"](this._racksmeta.target(), callback);
-        };
-        raw.update = function(options, callback) {
-          return rack.put(this._racksmeta.target(), options, callback);
-        };
-        raw.listChecks = function(callback) {
-          return rack.get(this._racksmeta.target() + '/checks', callback);
-        };
-        raw.listAlarms = function(callback) {
-          return rack.get(this._racksmeta.target() + '/alarms', callback);
-        };
-        return raw;
-      }
-    },
-    audits: {
-      _racksmeta: {
-        replyString: 'values'
+      audits: {
+        _racksmeta: {
+          replyString: 'values'
+        },
+        model: function(raw) {
+          return raw;
+        }
       },
-      model: function(raw) {
-        return raw;
-      }
-    },
-    checkTypes: {
-      _racksmeta: {
-        resourceString: 'check_types'
+      checkTypes: {
+        _racksmeta: {
+          resourceString: 'check_types'
+        },
+        model: function(raw) {
+          raw.details = function(callback) {
+            return rack.get(this._racksmeta.target(), callback);
+          };
+          return raw;
+        }
       },
-      model: function(raw) {
-        raw.details = function(callback) {
-          return rack.get(this._racksmeta.target(), callback);
-        };
-        return raw;
-      }
-    },
-    monitoringZones: {
-      _racksmeta: {
-        resourceString: 'monitoring_zones'
+      monitoringZones: {
+        _racksmeta: {
+          resourceString: 'monitoring_zones'
+        },
+        model: function(raw) {
+          raw.details = function(callback) {
+            return rack.get(this._racksmeta.target(), callback);
+          };
+          return raw;
+        }
       },
-      model: function(raw) {
-        raw.details = function(callback) {
-          return rack.get(this._racksmeta.target(), callback);
-        };
-        return raw;
-      }
-    },
-    notifications: {
-      model: function(raw) {
-        raw.details = function(callback) {
-          return rack.get(this._racksmeta.target(), callback);
-        };
-        return raw;
-      }
-    },
-    agents: {
-      _racksmeta: {
-        replyString: 'values'
+      notifications: {
+        model: function(raw) {
+          raw.details = function(callback) {
+            return rack.get(this._racksmeta.target(), callback);
+          };
+          return raw;
+        }
       },
-      model: function(raw) {
-        raw.details = function(callback) {
-          return rack.get(this._racksmeta.target(), callback);
-        };
-        raw.connections = function(callback) {
-          return rack.get(this._racksmeta.target() + '/connections', callback);
-        };
-        return raw;
+      agents: {
+        _racksmeta: {
+          replyString: 'values'
+        },
+        model: function(raw) {
+          raw.details = function(callback) {
+            return rack.get(this._racksmeta.target(), callback);
+          };
+          raw.connections = function(callback) {
+            return rack.get(this._racksmeta.target() + '/connections', callback);
+          };
+          return raw;
+        }
+      },
+      notification_plans: {
+        model: function(raw) {
+          return raw;
+        }
+      },
+      overview: function(callback) {
+        return rack.get(this._racksmeta.target() + '/views/overview', callback);
+      },
+      account: function(callback) {
+        return rack.get(this._racksmeta.target() + '/account', callback);
+      },
+      updateAccount: function(options, callback) {
+        return rack.put(this._racksmeta.target() + '/account', options, callback);
+      },
+      limits: function(callback) {
+        return rack.get(this._racksmeta.target() + '/limits', callback);
+      },
+      usage: function(callback) {
+        return rack.get(this._racksmeta.target() + '/usage', callback);
+      },
+      changelogs: function(callback) {
+        return rack.get(this._racksmeta.target() + '/changelogs/alarms', callback);
       }
-    },
-    notification_plans: {
-      model: function(raw) {
-        return raw;
-      }
-    },
-    overview: function(callback) {
-      return rack.get(this._racksmeta.target() + '/views/overview', callback);
-    },
-    account: function(callback) {
-      return rack.get(this._racksmeta.target() + '/account', callback);
-    },
-    updateAccount: function(options, callback) {
-      return rack.put(this._racksmeta.target() + '/account', options, callback);
-    },
-    limits: function(callback) {
-      return rack.get(this._racksmeta.target() + '/limits', callback);
-    },
-    usage: function(callback) {
-      return rack.get(this._racksmeta.target() + '/usage', callback);
-    },
-    changelogs: function(callback) {
-      return rack.get(this._racksmeta.target() + '/changelogs/alarms', callback);
-    }
+    };
   };
 
 }).call(this);

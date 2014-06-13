@@ -1,6 +1,6 @@
 "use strict";
 # http://docs.rackspace.com/images/api/v2/ci-devguide/content/API_Operations.html
-module.exports = 
+module.exports = (rack) ->
 	images:
 		model: (raw) ->
 			raw.details = (callback) ->

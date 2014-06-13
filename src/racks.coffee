@@ -196,6 +196,7 @@ module.exports = class RacksJS
 			_racksmeta: 
 				resourceString: subResource,
 				name: subResource,
+				singular: subResource,
 				target: () => return resource._racksmeta.target() + '/' + id + '/' + subResource
 		}
 	buildResource: (productName, resourceName, subResource) ->
@@ -322,14 +323,14 @@ module.exports = class RacksJS
 		rack = @
 
 		# http://docs.rackspace.com/servers/api/v2/cs-devguide/content/ch_api_operations.html
-		@cloudServersOpenStack = require('./products/cloudServersOpenStack.js');
+		@cloudServersOpenStack = require('./products/cloudServersOpenStack.js')(rack)
 
 		# http://docs.rackspace.com/servers/api/v1.0/cs-devguide/content/API_Operations-d1e1720.html
 		# This is very old stuff - First Gen servers. Never use this.
-		@cloudServers = require('./products/cloudServers.js');
+		@cloudServers = require('./products/cloudServers.js')(rack)
 
 		# http://docs.rackspace.com/loadbalancers/api/v1.0/clb-devguide/content/API_Operations-d1e1354.html
-		@cloudLoadBalancers = require('./products/cloudLoadBalancers.js');
+		@cloudLoadBalancers = require('./products/cloudLoadBalancers.js')(rack)
 
 		# http://docs.rackspace.com/files/api/v1/cf-devguide/content/API_Operations_for_CDN_Services-d1e2386.html
 		# FIXME: This should NOT be it's own product... Otherwise we duplicate a very large amount of code from RacksJS.cloudFiles
@@ -345,42 +346,42 @@ module.exports = class RacksJS
 		#				_racksmeta:
 		#					name: containerName
 		#			return catalog
-		@cloudFilesCDN = {};
-		@cloudBigData = {};
+		@cloudFilesCDN = {}
+		@cloudBigData = {}
 
 		# http://docs.rackspace.com/files/api/v1/cf-devguide/content/API_Operations_for_Storage_Services-d1e942.html
-		@cloudFiles = require('./products/cloudFiles.js');
+		@cloudFiles = require('./products/cloudFiles.js')(rack)
 
 		# http://docs.rackspace.com/cas/api/v1.0/autoscale-devguide/content/API_Operations.html
-		@autoscale = require('./products/autoscale.js');
+		@autoscale = require('./products/autoscale.js')(rack)
 
 		# http://docs.rackspace.com/cbs/api/v1.0/cbs-devguide/content/volume.html
-		@cloudBlockStorage = require('./products/cloudBlockStorage.js');
+		@cloudBlockStorage = require('./products/cloudBlockStorage.js')(rack)
 
 		# http://docs.rackspace.com/cdb/api/v1.0/cdb-devguide/content/API_Operations-d1e2264.html
-		@cloudDatabases = require('./products/cloudDatabases.js');
+		@cloudDatabases = require('./products/cloudDatabases.js')(rack)
 
 		# NO DOCUMENTATION AVAILABLE
 		@cloudOrchestration = {}
 		
 		# http://docs.rackspace.com/queues/api/v1.0/cq-devguide/content/API_Operations_dle001.html
-		@cloudQueues = require('./products/cloudQueues.js');
+		@cloudQueues = require('./products/cloudQueues.js')(rack)
 
 		# http://docs.rackspace.com/rcbu/api/v1.0/rcbu-devguide/content/operations.html
-		@cloudBackup = require('./products/cloudBackup.js');
+		@cloudBackup = require('./products/cloudBackup.js')(rack)
 
 		# http://docs.rackspace.com/cdns/api/v1.0/cdns-devguide/content/API_Operations-d1e2264.html
-		@cloudDNS = require('./products/cloudDNS.js');
+		@cloudDNS = require('./products/cloudDNS.js')(rack)
 
 		# http://docs.rackspace.com/images/api/v2/ci-devguide/content/API_Operations.html
-		@cloudImages = require('./products/cloudImages.js');
+		@cloudImages = require('./products/cloudImages.js')(rack)
 
 		# http://docs.rackspace.com/cm/api/v1.0/cm-devguide/content/service-api-operations.html
-		@cloudMonitoring = require('./products/cloudMonitoring.js');
+		@cloudMonitoring = require('./products/cloudMonitoring.js')(rack)
 
 		# Include utilties - these are common and useful RacksJS scripts meant primarily for use by Rackers
 		# but Rackspace customers may also find them useful.
-		@utils = require('./utils.js');
+		@utils = require('./utils.js')(rack)
 
 		# Shortcuts:
 		@servers = @cloudServersOpenStack.servers
@@ -390,3 +391,4 @@ module.exports = class RacksJS
 		@fgservers = @cloudServers.servers
 		@firstgen = @cloudServers
 		@clbs = @cloudLoadBalancers.loadBalancers
+		@dns = @cloudDNS.domains

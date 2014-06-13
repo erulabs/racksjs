@@ -301,6 +301,7 @@
         _racksmeta: {
           resourceString: subResource,
           name: subResource,
+          singular: subResource,
           target: (function(_this) {
             return function() {
               return resource._racksmeta.target() + '/' + id + '/' + subResource;
@@ -515,29 +516,30 @@
     RacksJS.prototype.buildProducts = function() {
       var rack;
       rack = this;
-      this.cloudServersOpenStack = require('./products/cloudServersOpenStack.js');
-      this.cloudServers = require('./products/cloudServers.js');
-      this.cloudLoadBalancers = require('./products/cloudLoadBalancers.js');
+      this.cloudServersOpenStack = require('./products/cloudServersOpenStack.js')(rack);
+      this.cloudServers = require('./products/cloudServers.js')(rack);
+      this.cloudLoadBalancers = require('./products/cloudLoadBalancers.js')(rack);
       this.cloudFilesCDN = {};
       this.cloudBigData = {};
-      this.cloudFiles = require('./products/cloudFiles.js');
-      this.autoscale = require('./products/autoscale.js');
-      this.cloudBlockStorage = require('./products/cloudBlockStorage.js');
-      this.cloudDatabases = require('./products/cloudDatabases.js');
+      this.cloudFiles = require('./products/cloudFiles.js')(rack);
+      this.autoscale = require('./products/autoscale.js')(rack);
+      this.cloudBlockStorage = require('./products/cloudBlockStorage.js')(rack);
+      this.cloudDatabases = require('./products/cloudDatabases.js')(rack);
       this.cloudOrchestration = {};
-      this.cloudQueues = require('./products/cloudQueues.js');
-      this.cloudBackup = require('./products/cloudBackup.js');
-      this.cloudDNS = require('./products/cloudDNS.js');
-      this.cloudImages = require('./products/cloudImages.js');
-      this.cloudMonitoring = require('./products/cloudMonitoring.js');
-      this.utils = require('./utils.js');
+      this.cloudQueues = require('./products/cloudQueues.js')(rack);
+      this.cloudBackup = require('./products/cloudBackup.js')(rack);
+      this.cloudDNS = require('./products/cloudDNS.js')(rack);
+      this.cloudImages = require('./products/cloudImages.js')(rack);
+      this.cloudMonitoring = require('./products/cloudMonitoring.js')(rack);
+      this.utils = require('./utils.js')(rack);
       this.servers = this.cloudServersOpenStack.servers;
       this.networks = this.cloudServersOpenStack.networks;
       this.ngservers = this.cloudServersOpenStack.servers;
       this.nextgen = this.cloudServersOpenStack;
       this.fgservers = this.cloudServers.servers;
       this.firstgen = this.cloudServers;
-      return this.clbs = this.cloudLoadBalancers.loadBalancers;
+      this.clbs = this.cloudLoadBalancers.loadBalancers;
+      return this.dns = this.cloudDNS.domains;
     };
 
     return RacksJS;

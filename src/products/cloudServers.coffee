@@ -1,6 +1,6 @@
 "use strict";
 # http://docs.rackspace.com/servers/api/v1.0/cs-devguide/content/API_Operations-d1e1720.html
-module.exports = 
+module.exports = (rack) ->
 	servers:
 		model: (raw) ->
 			raw.addresses = (callback) ->

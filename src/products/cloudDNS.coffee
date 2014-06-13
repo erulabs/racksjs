@@ -1,6 +1,6 @@
 "use strict";
 # http://docs.rackspace.com/cdns/api/v1.0/cdns-devguide/content/API_Operations-d1e2264.html
-module.exports = 
+module.exports = (rack) ->
 	limits:
 		model: (raw) ->
 			return raw

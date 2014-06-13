@@ -1,6 +1,6 @@
 "use strict";
 # http://docs.rackspace.com/servers/api/v2/cs-devguide/content/ch_api_operations.html
-module.exports = 
+module.exports = (rack) ->
 	networks:
 		_racksmeta:
 			resourceString: 'os-networksv2'

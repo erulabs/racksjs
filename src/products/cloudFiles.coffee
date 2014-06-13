@@ -1,6 +1,6 @@
 "use strict";
 # http://docs.rackspace.com/files/api/v1/cf-devguide/content/API_Operations_for_Storage_Services-d1e942.html
-module.exports = 
+module.exports = (rack) ->
 	containers:
 		_racksmeta:
 			# Containers are accessed with a GET directly to the storage endpoint - ie: there is no URL path beyond the product base

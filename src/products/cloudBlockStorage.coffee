@@ -1,6 +1,6 @@
 "use strict";
 # http://docs.rackspace.com/cbs/api/v1.0/cbs-devguide/content/volume.html
-module.exports = 
+module.exports = (rack) ->
 	volumes:
 		model: (raw) ->
 			raw.details = (callback) ->

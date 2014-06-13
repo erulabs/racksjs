@@ -1,6 +1,6 @@
 "use strict";
 # http://docs.rackspace.com/cas/api/v1.0/autoscale-devguide/content/API_Operations.html
-module.exports = 	
+module.exports = (rack) ->
 	groups:
 		model: (raw) ->
 			raw.listPolicies = (callback) ->

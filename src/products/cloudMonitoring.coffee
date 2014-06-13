@@ -1,6 +1,6 @@
 "use strict";
 # http://docs.rackspace.com/cm/api/v1.0/cm-devguide/content/service-api-operations.html
-module.exports = 
+module.exports = (rack) ->
 	entities:
 		_racksmeta:
 			dontWrap: yes
