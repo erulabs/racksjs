@@ -27,13 +27,18 @@ new RacksJS {
 	# which is appended to every instance of every product object
 	# .target() is called before every HTTP request, so simply change the
 	#
-	rs.datacenter = 'LON' # valid values are ORD, IAD, DFW, LON, AUS, HKG
+	rs.datacenter = 'ORD' # valid values are ORD, IAD, DFW, LON, AUS, HKG
 	#
 	# or the
 	#
 	rs.network = 'public' # valid values are public and internal
 	#
 	# at any time.
+
+	# Utilies
+	#rs.utils.rebuildLB '236777', (result) ->
+	#	if result
+	#		console.log 'done'
 
 	#rs.nextgen.servers.all (reply) ->
 	#	log reply
@@ -117,8 +122,8 @@ new RacksJS {
 	#console.log rs.nextgen.images._racksmeta.target()
 	#
 	# Cloud load balancers...
-	rs.clbs.assume('231229').details (reply) ->
-		console.log reply
+	#rs.clbs.assume('231229').details (reply) ->
+	#	console.log reply
 
 	# Some services which normally return ugly plaintext (like OpenStack's Swift AKA CloudFiles)
 	# are wrapped nicely into json and still work with things like RacksJS's .target()

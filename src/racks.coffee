@@ -50,13 +50,16 @@ module.exports = class RacksJS
 		@buildProducts()
 		# Authenticate
 		if @authObj.username? and @authObj.apiKey? and callback? then @authenticate @authObj, callback
-	log: (message, verbose) ->
+	log: () ->
 		if @verbosity is 0 then return false
 		date = new Date()
 		process.stdout.write(date.getMonth() + '/' + date.getDate() + ' ' + date.toTimeString().split(' ')[0] + ' ')
 		console.log.apply(@, arguments)
 	logerror: (message) ->
-		@log @clr.red + 'Error' + @clr.reset + ':', message
+		if @verbosity is 0 then return false
+		@log @clr.red + '---> Error' + @clr.reset + ':'
+		console.log.apply(@, arguments)
+		return false
 	https: (opts, callback) ->
 		if !opts.headers? then opts.headers = {}
 		# Save the plaintext option, but don't pass it along to HTTPS
@@ -111,7 +114,11 @@ module.exports = class RacksJS
 						@log @clr.green + 'Reply' + @clr.reset + ':', response.statusCode, @httpCodes[response.statusCode]
 						@log '--->', @clr.cyan + 'Headers' + @clr.reset + ":\n", response.headers
 						@log '--->', @clr.cyan + 'Body' + @clr.reset + ":\n", reply
-					callback reply
+					if callback?
+						if typeof reply is 'string'
+							if reply.length is 0
+								reply = false
+						callback reply
 				response.on 'error', (error) => @log error, opts
 			# Write data down the pipe (in the case of POST and PUTs, etc)
 			if opts.data? then request.write opts.data
@@ -267,9 +274,12 @@ module.exports = class RacksJS
 							target = target[rack.network.toLowerCase() + 'URL']
 						if rack.test
 							target = 'https://MOCKAPI'
-						if target.substr(-1) isnt '/' then target = target + '/'
-						return target
-				}
+						if !target
+							rack.logerror 'No target was found with endpoint "' + rack.authObj.endpoint + '" and datacenter "' + rack.datacenter + '"'
+						else
+							if target.substr(-1) isnt '/' then target = target + '/'
+							return target
+					}
 				# Build out .products, which isolates the product catalog for tools like RacksUI - ie:
 				# make it friendlier to code against, less friendly to script against.
 				# RacksJS.products is, after an authentication, a kind of suped serviceCatalog - or rather, the full formal name
@@ -386,9 +396,7 @@ module.exports = class RacksJS
 		# Shortcuts:
 		@servers = @cloudServersOpenStack.servers
 		@networks = @cloudServersOpenStack.networks
-		@ngservers = @cloudServersOpenStack.servers
 		@nextgen = @cloudServersOpenStack
-		@fgservers = @cloudServers.servers
 		@firstgen = @cloudServers
 		@clbs = @cloudLoadBalancers.loadBalancers
 		@dns = @cloudDNS.domains

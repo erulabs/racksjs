@@ -35,7 +35,17 @@
         },
         model: function(raw) {
           raw.details = function(callback) {
-            return rack.get(this._racksmeta.target(), callback);
+            return rack.get(this._racksmeta.target(), function(reply) {
+              return callback(reply.loadBalancer);
+            });
+          };
+          raw.update = function(options, callback) {
+            return rack.put(this._racksmeta.target(), options, function(reply) {
+              return callback(reply);
+            });
+          };
+          raw["delete"] = function(callback) {
+            return rack["delete"](this._racksmeta.target(), callback);
           };
           raw.listVirtualIPs = function(callback) {
             return rack.get(this._racksmeta.target() + '/virtualips', callback);
@@ -43,27 +53,18 @@
           raw.usage = function(callback) {
             return rack.get(this._racksmeta.target()(' /usage/current', callback));
           };
-          raw.sessionpersistence = {
-            list: function(callback) {
-              return rack.get(this._racksmeta.target() + '/sessionpersistence', callback);
-            },
-            enable: function(callback) {
-              return rack.put(this._racksmeta.target() + '/sessionpersistence', callback);
-            },
-            disable: function(callback) {
-              return rack["delete"](this._racksmeta.target() + '/sessionpersistence', callback);
-            }
+          raw.getSSL = function(callback) {
+            return rack.get(this._racksmeta.target() + '/ssltermination', function(reply) {
+              return callback(reply.sslTermination);
+            });
           };
-          raw.connectionlogging = {
-            list: function(callback) {
-              return rack.get(this._racksmeta.target() + '/connectionlogging', callback);
-            },
-            enable: function(callback) {
-              return rack.put(this._racksmeta.target() + '/connectionlogging?enabled=true', callback);
-            },
-            disable: function(callback) {
-              return rack.put(this._racksmeta.target() + '/connectionlogging?enabled=false', callback);
-            }
+          raw.setSSL = function(options, callback) {
+            return rack.put(this._racksmeta.target() + '/ssltermination', {
+              sslTermination: options
+            }, callback);
+          };
+          raw.disableSSL = function(callback) {
+            return rack["delete"](this._racksmeta.target() + '/ssltermination', callback);
           };
           raw.listACL = function(callback) {
             return rack.get(this._racksmeta.target() + '/accesslist', callback);

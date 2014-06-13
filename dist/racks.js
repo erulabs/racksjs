@@ -68,7 +68,7 @@
       }
     }
 
-    RacksJS.prototype.log = function(message, verbose) {
+    RacksJS.prototype.log = function() {
       var date;
       if (this.verbosity === 0) {
         return false;
@@ -79,7 +79,12 @@
     };
 
     RacksJS.prototype.logerror = function(message) {
-      return this.log(this.clr.red + 'Error' + this.clr.reset + ':', message);
+      if (this.verbosity === 0) {
+        return false;
+      }
+      this.log(this.clr.red + '---> Error' + this.clr.reset + ':');
+      console.log.apply(this, arguments);
+      return false;
     };
 
     RacksJS.prototype.https = function(opts, callback) {
@@ -147,7 +152,14 @@
                 _this.log('--->', _this.clr.cyan + 'Headers' + _this.clr.reset + ":\n", response.headers);
                 _this.log('--->', _this.clr.cyan + 'Body' + _this.clr.reset + ":\n", reply);
               }
-              return callback(reply);
+              if (callback != null) {
+                if (typeof reply === 'string') {
+                  if (reply.length === 0) {
+                    reply = false;
+                  }
+                }
+                return callback(reply);
+              }
             });
             return response.on('error', function(error) {
               return _this.log(error, opts);
@@ -438,10 +450,14 @@
                 if (rack.test) {
                   target = 'https://MOCKAPI';
                 }
-                if (target.substr(-1) !== '/') {
-                  target = target + '/';
+                if (!target) {
+                  return rack.logerror('No target was found with endpoint "' + rack.authObj.endpoint + '" and datacenter "' + rack.datacenter + '"');
+                } else {
+                  if (target.substr(-1) !== '/') {
+                    target = target + '/';
+                  }
+                  return target;
                 }
-                return target;
               }
             };
             _this.products[product.name] = {};
@@ -534,9 +550,7 @@
       this.utils = require('./utils.js')(rack);
       this.servers = this.cloudServersOpenStack.servers;
       this.networks = this.cloudServersOpenStack.networks;
-      this.ngservers = this.cloudServersOpenStack.servers;
       this.nextgen = this.cloudServersOpenStack;
-      this.fgservers = this.cloudServers.servers;
       this.firstgen = this.cloudServers;
       this.clbs = this.cloudLoadBalancers.loadBalancers;
       return this.dns = this.cloudDNS.domains;

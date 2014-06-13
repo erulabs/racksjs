@@ -8,7 +8,7 @@ new RacksJS {
 }, (rs) ->
 	log = console.log
 
-	# a list of all records on the domain:
+	# a list of all records on an assumed domain:
 	#rs.dns.assume('4181780').records.all (records) -> log records
 
 	# adding a new domain:
