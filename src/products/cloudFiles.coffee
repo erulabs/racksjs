@@ -31,12 +31,36 @@ module.exports = (rack) ->
 					name: containerName
 				details: (callback) ->
 					rack.get @_racksmeta.target(), callback
+				delete: (callback) ->
+					rack.delete @_racksmeta.target(), callback
+				bulkDelete: (files, callback) ->
+					if files.length > 10000
+						rack.logerror 'bulkDelete is limited to deleting 10000 items at once. You tried to delete', files.length
+					else
+						fixedFiles = []
+						for file in files
+							fixedFiles.push @name + '/' + file
+						fixedFiles = fixedFiles.join("\n")
+						url = @_racksmeta.target() + '?bulk-delete'
+						rack.logerror 'file list:', fixedFiles
+						rack.https { method: 'DELETE', url: url, data: fixedFiles, headers: {
+							'Content-Type': 'text/plain'
+						} }, callback
+				# Delete all files in a very very large container
+				forceEmpty: (callback) ->
+					self = @
+					@listObjects (list) ->
+						if list.length > 0
+							self.bulkDelete list, (reply) ->
+								self.forceEmpty(callback)
+						else if callback?
+							callback(true)
 				listObjects: (callback) ->
-					rack.https({
+					rack.https {
 						method: 'GET',
 						plaintext: true,
-						url: this._racksmeta.target()
-					}, cb)
+						url: @_racksmeta.target()
+					}, callback
 				upload: (options, callback) ->
 					if !options?
 						options = {};

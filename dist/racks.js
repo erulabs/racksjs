@@ -97,7 +97,9 @@
       if (this.authToken) {
         opts.headers['X-Auth-Token'] = this.authToken;
       }
-      opts.headers['Content-Type'] = 'application/json';
+      if (opts.headers['Content-Type'] == null) {
+        opts.headers['Content-Type'] = 'application/json';
+      }
       if (opts.data != null) {
         if (typeof opts.data === 'object') {
           try {
@@ -188,7 +190,14 @@
       }, callback);
     };
 
-    RacksJS.prototype["delete"] = function(url, callback) {
+    RacksJS.prototype["delete"] = function(url, data, callback) {
+      if (data == null) {
+        data = {};
+      }
+      if (typeof data === 'function') {
+        callback = data;
+        data = {};
+      }
       if (callback == null) {
         callback = function() {
           return false;
@@ -196,7 +205,8 @@
       }
       return this.https({
         method: 'DELETE',
-        url: url
+        url: url,
+        data: data
       }, callback);
     };
 
@@ -553,7 +563,8 @@
       this.nextgen = this.cloudServersOpenStack;
       this.firstgen = this.cloudServers;
       this.clbs = this.cloudLoadBalancers.loadBalancers;
-      return this.dns = this.cloudDNS.domains;
+      this.dns = this.cloudDNS.domains;
+      return this.files = this.cloudFiles.containers;
     };
 
     return RacksJS;

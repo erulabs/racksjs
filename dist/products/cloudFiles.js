@@ -42,12 +42,51 @@
             details: function(callback) {
               return rack.get(this._racksmeta.target(), callback);
             },
+            "delete": function(callback) {
+              return rack["delete"](this._racksmeta.target(), callback);
+            },
+            bulkDelete: function(files, callback) {
+              var file, fixedFiles, url, _i, _len;
+              if (files.length > 10000) {
+                return rack.logerror('bulkDelete is limited to deleting 10000 items at once. You tried to delete', files.length);
+              } else {
+                fixedFiles = [];
+                for (_i = 0, _len = files.length; _i < _len; _i++) {
+                  file = files[_i];
+                  fixedFiles.push(this.name + '/' + file);
+                }
+                fixedFiles = fixedFiles.join("\n");
+                url = this._racksmeta.target() + '?bulk-delete';
+                rack.logerror('file list:', fixedFiles);
+                return rack.https({
+                  method: 'DELETE',
+                  url: url,
+                  data: fixedFiles,
+                  headers: {
+                    'Content-Type': 'text/plain'
+                  }
+                }, callback);
+              }
+            },
+            forceEmpty: function(callback) {
+              var self;
+              self = this;
+              return this.listObjects(function(list) {
+                if (list.length > 0) {
+                  return self.bulkDelete(list, function(reply) {
+                    return self.forceEmpty(callback);
+                  });
+                } else if (callback != null) {
+                  return callback(true);
+                }
+              });
+            },
             listObjects: function(callback) {
               return rack.https({
                 method: 'GET',
                 plaintext: true,
                 url: this._racksmeta.target()
-              }, cb);
+              }, callback);
             },
             upload: function(options, callback) {
               var apiStream, inputStream, url;

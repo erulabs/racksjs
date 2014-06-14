@@ -68,7 +68,8 @@ module.exports = class RacksJS
 		# Send along auth token if we have one
 		if @authToken then opts.headers['X-Auth-Token'] = @authToken
 		# Always use JSON
-		opts.headers['Content-Type'] = 'application/json'
+		if !opts.headers['Content-Type']?
+			opts.headers['Content-Type'] = 'application/json'
 		# If we have data, JSON.stringify if needed and calc length
 		if opts.data?
 			if typeof opts.data is 'object'
@@ -125,10 +126,15 @@ module.exports = class RacksJS
 			request.end()
 	get: (url, callback) -> @https { method: 'GET', url: url }, callback
 	post: (url, data, callback) -> @https { method: 'POST', url: url, data: data }, callback
-	delete: (url, callback) -> 
+	delete: (url, data, callback) ->
+		unless data?
+			data = {}
+		if typeof data is 'function'
+			callback = data
+			data = {}
 		unless callback?
 			callback = () -> return false
-		@https { method: 'DELETE', url: url }, callback
+		@https { method: 'DELETE', url: url, data: data }, callback
 	put: (url, data, callback) -> @https { method: 'PUT', url: url, data: data }, callback
 	authenticate: (authObj, callback) ->
 		if !authObj.username? or !authObj.apiKey? then return callback { error: 'No username or apiKey provided to .authenticate()' }
@@ -400,3 +406,4 @@ module.exports = class RacksJS
 		@firstgen = @cloudServers
 		@clbs = @cloudLoadBalancers.loadBalancers
 		@dns = @cloudDNS.domains
+		@files = @cloudFiles.containers
