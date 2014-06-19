@@ -15,7 +15,9 @@ RacksJS = require '../dist/racks.js'
 new RacksJS {
   username: process.argv[3]
   apiKey: process.argv[4]
-  verbosity: 1
+  verbosity: 5
+  # To auth against LON
+  #endpoint: 'https://lon.identity.api.rackspacecloud.com/v2.0'
 }, (rs) ->
 
 	log = console.log
@@ -33,6 +35,14 @@ new RacksJS {
 	#
 	# at any time.
 
+	# Utilies
+	#rs.utils.rebuildLB '236777', (result) ->
+	#	if result
+	#		console.log 'done'
+
+	#rs.nextgen.servers.all (reply) ->
+	#	log reply
+
 	# Lets get to some cool stuff
 
 	# CLOUD FILES:
@@ -49,6 +59,9 @@ new RacksJS {
 	#		file: 'path_of_file_to_upload'
 	#	}, (reply) ->
 	#		console.log reply.statusCode
+
+	# rs.cloudFiles.containers.new { name: 'somenewTestContainer' }
+
 
 	# CLOUD MONITORING
 
@@ -109,7 +122,7 @@ new RacksJS {
 	#console.log rs.nextgen.images._racksmeta.target()
 	#
 	# Cloud load balancers...
-	#rs.clbs.assume('SOME_ID').details (reply) ->
+	#rs.clbs.assume('231229').details (reply) ->
 	#	console.log reply
 
 	# Some services which normally return ugly plaintext (like OpenStack's Swift AKA CloudFiles)

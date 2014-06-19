@@ -23,6 +23,9 @@
       if (this.authObj.endpoint == null) {
         this.authObj.endpoint = 'https://identity.api.rackspacecloud.com/v2.0';
       }
+      if (this.authObj.endpoint === 'https://lon.identity.api.rackspacecloud.com/v2.0') {
+        this.datacenter = 'LON';
+      }
       if (this.authObj.test == null) {
         this.test = false;
       } else {
@@ -65,7 +68,7 @@
       }
     }
 
-    RacksJS.prototype.log = function(message, verbose) {
+    RacksJS.prototype.log = function() {
       var date;
       if (this.verbosity === 0) {
         return false;
@@ -75,8 +78,17 @@
       return console.log.apply(this, arguments);
     };
 
+    RacksJS.prototype.logerror = function(message) {
+      if (this.verbosity === 0) {
+        return false;
+      }
+      this.log(this.clr.red + '---> Error' + this.clr.reset + ':');
+      console.log.apply(this, arguments);
+      return false;
+    };
+
     RacksJS.prototype.https = function(opts, callback) {
-      var plaintext, request;
+      var e, plaintext, request;
       if (opts.headers == null) {
         opts.headers = {};
       }
@@ -85,10 +97,17 @@
       if (this.authToken) {
         opts.headers['X-Auth-Token'] = this.authToken;
       }
-      opts.headers['Content-Type'] = 'application/json';
+      if (opts.headers['Content-Type'] == null) {
+        opts.headers['Content-Type'] = 'application/json';
+      }
       if (opts.data != null) {
         if (typeof opts.data === 'object') {
-          opts.data = JSON.stringify(opts.data);
+          try {
+            opts.data = JSON.stringify(opts.data);
+          } catch (_error) {
+            e = _error;
+            console.log(e);
+          }
         }
         opts.headers['Content-Length'] = opts.data.length;
       }
@@ -131,9 +150,18 @@
               if (_this.verbosity > 0 && _this.verbosity < 4) {
                 _this.log(_this.clr.green + 'Reply' + _this.clr.reset + ':', response.statusCode, _this.httpCodes[response.statusCode]);
               } else if (_this.verbosity > 3) {
-                _this.log(_this.clr.green + 'Reply' + _this.clr.reset + ':', reply);
+                _this.log(_this.clr.green + 'Reply' + _this.clr.reset + ':', response.statusCode, _this.httpCodes[response.statusCode]);
+                _this.log('--->', _this.clr.cyan + 'Headers' + _this.clr.reset + ":\n", response.headers);
+                _this.log('--->', _this.clr.cyan + 'Body' + _this.clr.reset + ":\n", reply);
               }
-              return callback(reply);
+              if (callback != null) {
+                if (typeof reply === 'string') {
+                  if (reply.length === 0) {
+                    reply = false;
+                  }
+                }
+                return callback(reply);
+              }
             });
             return response.on('error', function(error) {
               return _this.log(error, opts);
@@ -162,7 +190,14 @@
       }, callback);
     };
 
-    RacksJS.prototype["delete"] = function(url, callback) {
+    RacksJS.prototype["delete"] = function(url, data, callback) {
+      if (data == null) {
+        data = {};
+      }
+      if (typeof data === 'function') {
+        callback = data;
+        data = {};
+      }
       if (callback == null) {
         callback = function() {
           return false;
@@ -170,7 +205,8 @@
       }
       return this.https({
         method: 'DELETE',
-        url: url
+        url: url,
+        data: data
       }, callback);
     };
 
@@ -287,6 +323,7 @@
         _racksmeta: {
           resourceString: subResource,
           name: subResource,
+          singular: subResource,
           target: (function(_this) {
             return function() {
               return resource._racksmeta.target() + '/' + id + '/' + subResource;
@@ -348,34 +385,40 @@
             return _this.buildModel(resource, obj);
           };
         })(this);
-        resource["new"] = (function(_this) {
-          return function(obj, callback) {
-            var data, replyString;
-            data = {};
-            if (resource._racksmeta.dontWrap != null) {
-              data = obj;
-            } else {
-              data[resource._racksmeta.singular] = obj;
-            }
-            if (resource._racksmeta.replyString != null) {
-              replyString = resource._racksmeta.replyString;
-            } else {
-              replyString = resource._racksmeta.name;
-            }
-            return rack.post(resource._racksmeta.target(), data, function(reply) {
-              if (reply[replyString] != null) {
-                obj = reply[replyString];
-              } else if (reply[resource._racksmeta.singular] != null) {
-                obj = reply[resource._racksmeta.singular];
+        if (resource["new"] != null) {
+          resource["new"] = resource["new"](rack);
+        } else {
+          resource["new"] = (function(_this) {
+            return function(obj, callback) {
+              var data, replyString;
+              data = {};
+              if (resource._racksmeta.dontWrap != null) {
+                data = obj;
               } else {
-                return callback(reply);
+                data[resource._racksmeta.singular] = obj;
               }
-              if (callback != null) {
-                return callback(rack.buildModel(resource, obj));
+              if (resource._racksmeta.replyString != null) {
+                replyString = resource._racksmeta.replyString;
+              } else {
+                replyString = resource._racksmeta.name;
               }
-            });
-          };
-        })(this);
+              return rack.post(resource._racksmeta.target(), data, function(reply) {
+                if (reply[replyString] != null) {
+                  obj = reply[replyString];
+                } else if (reply[resource._racksmeta.singular] != null) {
+                  obj = reply[resource._racksmeta.singular];
+                } else {
+                  if (callback != null) {
+                    return callback(reply);
+                  }
+                }
+                if (callback != null) {
+                  return callback(rack.buildModel(resource, obj));
+                }
+              });
+            };
+          })(this);
+        }
       }
       return resource;
     };
@@ -417,10 +460,14 @@
                 if (rack.test) {
                   target = 'https://MOCKAPI';
                 }
-                if (target.substr(-1) !== '/') {
-                  target = target + '/';
+                if (!target) {
+                  return rack.logerror('No target was found with endpoint "' + rack.authObj.endpoint + '" and datacenter "' + rack.datacenter + '"');
+                } else {
+                  if (target.substr(-1) !== '/') {
+                    target = target + '/';
+                  }
+                  return target;
                 }
-                return target;
               }
             };
             _this.products[product.name] = {};
@@ -495,761 +542,29 @@
     RacksJS.prototype.buildProducts = function() {
       var rack;
       rack = this;
-      this.cloudServersOpenStack = {
-        networks: {
-          _racksmeta: {
-            resourceString: 'os-networksv2'
-          },
-          model: function(raw) {
-            raw.show = function(callback) {
-              var _ref;
-              if ((_ref = raw.label) === 'public' || _ref === 'private') {
-                return callback({
-                  network: {
-                    id: raw.id,
-                    label: raw.label,
-                    cidr: void 0
-                  }
-                });
-              } else {
-                return rack.get(this._racksmeta.target(), callback);
-              }
-            };
-            raw["delete"] = function(callback) {
-              return rack["delete"](this._racksmeta.target(), callback);
-            };
-            return raw;
-          }
-        },
-        flavors: {
-          model: function(raw) {
-            raw.details = function(callback) {
-              return rack.get(this._racksmeta.target(), callback);
-            };
-            raw.specs = function(callback) {
-              return rack.get(this._racksmeta.target() + '/os-extra_specs', callback);
-            };
-            return raw;
-          }
-        },
-        images: {
-          model: function(raw) {
-            raw.details = function(callback) {
-              return rack.get(this._racksmeta.target(), callback);
-            };
-            raw["delete"] = function(callback) {
-              return rack["delete"](this._racksmeta.target(), callback);
-            };
-            return raw;
-          }
-        },
-        servers: {
-          _racksmeta: {
-            requiredFields: {
-              name: 'string',
-              imageRef: 'string',
-              flavorRef: 'string'
-            }
-          },
-          model: function(raw) {
-            raw.systemActive = function(interval, callback) {
-              var action, recurse;
-              if (typeof interval === 'function') {
-                callback = interval;
-                interval = 15 * 1000;
-              }
-              action = (function(_this) {
-                return function() {
-                  return raw.details(function(reply) {
-                    if (reply.status !== "ACTIVE") {
-                      return recurse();
-                    } else {
-                      return callback(reply);
-                    }
-                  });
-                };
-              })(this);
-              recurse = (function(_this) {
-                return function() {
-                  return setTimeout(action, interval);
-                };
-              })(this);
-              return recurse();
-            };
-            raw.details = function(callback) {
-              return rack.get(this._racksmeta.target(), function(reply) {
-                return callback(reply.server);
-              });
-            };
-            raw.addresses = function(callback) {
-              return rack.get(this._racksmeta.target() + '/ips', callback);
-            };
-            raw["delete"] = function(callback) {
-              return rack["delete"](this._racksmeta.target(), callback);
-            };
-            raw.update = function(options, callback) {
-              if (options.server == null) {
-                options = {
-                  "server": options
-                };
-              }
-              return rack.put(this._racksmeta.target(), options, callback);
-            };
-            raw.action = function(options, callback) {
-              return rack.post(this._racksmeta.target() + '/action', options, callback);
-            };
-            raw.changePassword = function(password, callback) {
-              return raw.action({
-                changePassword: {
-                  adminPass: password
-                }
-              }, callback);
-            };
-            raw.reboot = function(type, callback) {
-              var cb;
-              if (typeof type === 'function') {
-                cb = type;
-                type = 'SOFT';
-              }
-              return raw.action({
-                reboot: {
-                  type: type
-                }
-              }, callback);
-            };
-            raw.rescue = function(callback) {
-              return raw.action({
-                rescue: null
-              }, callback);
-            };
-            raw.unrescue = function(callback) {
-              return raw.action({
-                unrescue: null
-              }, callback);
-            };
-            raw.createImage = function(options, callback) {
-              if (typeof options === 'string') {
-                options = {
-                  "createImage": {
-                    "name": options
-                  }
-                };
-              }
-              return raw.action(options, callback);
-            };
-            raw.serverActions = function(callback) {
-              return rack.get(this._racksmeta.target() + '/os-instance-actions', callback);
-            };
-            raw.showServerAction = function(id, callback) {
-              return rack.get(this._racksmeta.target() + '/os-instance-actions/' + id, callback);
-            };
-            raw.resize = function(options, callback) {
-              if (typeof options === 'string') {
-                options = {
-                  "flavorRef": options
-                };
-              }
-              return raw.action({
-                resize: options
-              }, callback);
-            };
-            raw.confirmResize = function(callback) {
-              return raw.action({
-                confirmResize: null
-              }, callback);
-            };
-            raw.revertResize = function(callback) {
-              return raw.action({
-                revertResize: null
-              }, callback);
-            };
-            raw.rebuild = function(options, callback) {
-              return raw.action({
-                rebuild: options
-              }, callback);
-            };
-            raw.attachVolume = function(options, callback) {
-              return rack.post(this._racksmeta.target() + '/os-volume_attachments', options, callback);
-            };
-            raw.volumes = function(callback) {
-              return rack.get(this._racksmeta.target() + '/os-volume_attachments', callback);
-            };
-            raw.volumeDetails = function(id, callback) {
-              return rack.get(this._racksmeta.target() + '/os-volume_attachments/' + id, callback);
-            };
-            raw.detachVolume = function(callback) {
-              return rack["delete"](this._racksmeta.target() + '/os-volume_attachments/' + id, callback);
-            };
-            raw.metadata = function(callback) {
-              return rack.get(this._racksmeta.target() + '/metadata', callback);
-            };
-            raw.setMetadata = function(options, callback) {
-              if (options.metadata == null) {
-                options = {
-                  'metadata': options
-                };
-              }
-              if (callback == null) {
-                callback = function() {
-                  return false;
-                };
-              }
-              return rack.put(this._racksmeta.target() + '/metadata', options, callback);
-            };
-            raw.updateMetadata = function(options, callback) {
-              if (options.metadata == null) {
-                options = {
-                  'metadata': options
-                };
-              }
-              return rack.post(this._racksmeta.target() + '/metadata', options, callback);
-            };
-            raw.getMetadataItem = function(key, callback) {
-              return rack.get(this._racksmeta.target() + '/metadata/' + key, callback);
-            };
-            raw.setMetadataItem = function(key, options, callback) {
-              if (options.metadata == null) {
-                options = {
-                  'metadata': options
-                };
-              }
-              return rack.put(this._racksmeta.target() + '/metadata/' + key, options, callback);
-            };
-            raw.deleteMetadataItem = function(key, callback) {
-              return rack["delete"](this._racksmeta.target() + '/metadata/' + key, callback);
-            };
-            raw.getVips = function(callback) {
-              return rack.get(this._racksmeta.target() + '/os-virtual-interfacesv2', callback);
-            };
-            raw.attachNetwork = function(options, callback) {
-              if (options.metadata == null) {
-                options = {
-                  'virtual_interface': options
-                };
-              }
-              return rack.post(this._racksmeta.target() + '/os-virtual-interfacesv2', options, callback);
-            };
-            return raw;
-          }
-        },
-        keys: {
-          _racksmeta: {
-            resourceString: 'os-keypairs'
-          },
-          model: function(raw) {
-            raw["delete"] = function(callback) {
-              return rack["delete"](this._racksmeta.target(), callback);
-            };
-            raw.details = function(callback) {
-              return rack.get(this._racksmeta.target(), function(reply) {
-                return callback(reply);
-              });
-            };
-            return raw;
-          }
-        }
-      };
-      this.cloudServers = {
-        servers: {
-          model: function(raw) {
-            raw.addresses = function(callback) {
-              return rack.get(this._racksmeta.target() + '/ips', callback);
-            };
-            return raw;
-          }
-        },
-        createImage: function(options, callback) {
-          if ((options.name != null) && (options.serverId != null)) {
-            return rack.post(this._racksmeta.target() + 'images', {
-              "image": options
-            }, callback);
-          } else {
-            return rack.log('Must provide "name" and "serverId" for firstgen.createImage({})');
-          }
-        },
-        images: {
-          model: function(raw) {
-            return raw;
-          }
-        },
-        flavors: {
-          model: function(raw) {
-            return raw;
-          }
-        }
-      };
-      this.cloudLoadBalancers = {
-        algorithms: {
-          _racksmeta: {
-            resourceString: 'loadbalancers/algorithms',
-            name: 'algorithms'
-          },
-          model: function(raw) {
-            return raw;
-          }
-        },
-        alloweddomains: {
-          _racksmeta: {
-            resourceString: 'loadbalancers/alloweddomains',
-            name: 'alloweddomains'
-          },
-          model: function(raw) {
-            return raw;
-          }
-        },
-        protocols: {
-          _racksmeta: {
-            resourceString: 'loadbalancers/protocols',
-            name: 'protocols'
-          },
-          model: function(raw) {
-            return raw;
-          }
-        },
-        loadBalancers: {
-          _racksmeta: {
-            resourceString: 'loadbalancers'
-          },
-          model: function(raw) {
-            raw.details = function(callback) {
-              return rack.get(this._racksmeta.target(), callback);
-            };
-            raw.listVirtualIPs = function(callback) {
-              return rack.get(this._racksmeta.target() + '/virtualips', callback);
-            };
-            raw.usage = function(callback) {
-              return rack.get(this._racksmeta.target()(' /usage/current', callback));
-            };
-            raw.sessionpersistence = {
-              list: function(callback) {
-                return rack.get(this._racksmeta.target() + '/sessionpersistence', callback);
-              },
-              enable: function(callback) {
-                return rack.put(this._racksmeta.target() + '/sessionpersistence', callback);
-              },
-              disable: function(callback) {
-                return rack["delete"](this._racksmeta.target() + '/sessionpersistence', callback);
-              }
-            };
-            raw.connectionlogging = {
-              list: function(callback) {
-                return rack.get(this._racksmeta.target() + '/connectionlogging', callback);
-              },
-              enable: function(callback) {
-                return rack.put(this._racksmeta.target() + '/connectionlogging?enabled=true', callback);
-              },
-              disable: function(callback) {
-                return rack.put(this._racksmeta.target() + '/connectionlogging?enabled=false', callback);
-              }
-            };
-            raw.listACL = function(callback) {
-              return rack.get(this._racksmeta.target() + '/accesslist', callback);
-            };
-            raw.nodes = rack.subResource(this, raw.id, 'nodes');
-            return raw;
-          }
-        }
-      };
+      this.cloudServersOpenStack = require('./products/cloudServersOpenStack.js')(rack);
+      this.cloudServers = require('./products/cloudServers.js')(rack);
+      this.cloudLoadBalancers = require('./products/cloudLoadBalancers.js')(rack);
       this.cloudFilesCDN = {};
       this.cloudBigData = {};
-      this.cloudFiles = {
-        containers: {
-          _racksmeta: {
-            resourceString: '',
-            plaintext: true
-          },
-          model: function(containerName) {
-            if (containerName.id != null) {
-              containerName = containerName.id;
-            }
-            if (containerName.name != null) {
-              containerName = containerName.name;
-            }
-            return {
-              name: containerName,
-              _racksmeta: {
-                name: containerName
-              },
-              details: function(callback) {
-                return rack.get(this._racksmeta.target(), callback);
-              },
-              listObjects: function(callback) {
-                return rack.https({
-                  method: 'GET',
-                  plaintext: true,
-                  url: this._racksmeta.target()
-                }, cb);
-              },
-              upload: function(options, callback) {
-                var apiStream, inputStream, url;
-                if (options == null) {
-                  options = {};
-                }
-                if (callback == null) {
-                  callback = function() {
-                    return false;
-                  };
-                }
-                if (options.headers == null) {
-                  options.headers = {};
-                }
-                if (options.file != null) {
-                  inputStream = rack.fs.createReadStream(options.file);
-                  options.headers['content-length'] = rack.fs.statSync(options.file).size;
-                } else if (options.stream != null) {
-                  inputStream = options.stream;
-                }
-                if (options.path == null) {
-                  if (options.file != null) {
-                    options.path = rack.path.basename(options.file);
-                  } else {
-                    options.path = 'STREAM';
-                  }
-                }
-                inputStream.on('response', function(response) {
-                  return response.headers = {
-                    'content-type': response.headers['content-type'],
-                    'content-length': response.headers['content-length']
-                  };
-                });
-                options.method = 'PUT';
-                options.headers['X-Auth-Token'] = rack.authToken;
-                options.upload = true;
-                url = rack.url.parse(this._racksmeta.target());
-                options.host = url.host;
-                options.path = url.path + '/' + options.path;
-                options.container = this.name;
-                apiStream = rack.https_node.request(options, callback);
-                if (inputStream) {
-                  inputStream.pipe(apiStream);
-                }
-                return apiStream;
-              }
-            };
-          }
-        }
-      };
-      this.autoscale = {
-        groups: {
-          model: function(raw) {
-            raw.listPolicies = function(callback) {
-              return rack.get(this._racksmeta.target() + '/policies', callback);
-            };
-            raw.listConfigurations = function(callback) {
-              return rack.get(this._racksmeta.target() + '/config', callback);
-            };
-            return raw;
-          }
-        }
-      };
-      this.cloudBlockStorage = {
-        volumes: {
-          model: function(raw) {
-            raw.details = function(callback) {
-              return rack.get(this._racksmeta.target(), callback);
-            };
-            raw["delete"] = function(callback) {
-              return rack["delete"](this._racksmeta.target(), callback);
-            };
-            raw.rename = function(options, callback) {
-              if (typeof options === 'string') {
-                options = {
-                  "name": options
-                };
-              }
-              if (options.volume == null) {
-                options = {
-                  "volume": options
-                };
-              }
-              return rack.put(this._racksmeta.target(), options, callback);
-            };
-            raw.snapshot = function(options, callback) {
-              if (typeof options === 'string') {
-                options = {
-                  "snapshot": {
-                    "display_name": options
-                  }
-                };
-              }
-              options.snapshot.volume_id = raw.id;
-              return rack.post(this.cloudBlockStorage._racksmeta.target() + '/snapshots', options, callback);
-            };
-            return raw;
-          }
-        },
-        volumeDetails: function(callback) {
-          return rack.get(this._racksmeta.target() + '/volumes/detail', callback);
-        },
-        types: {
-          _racksmeta: {
-            replyString: 'volume_types'
-          },
-          model: function(raw) {
-            raw.details = function(callback) {
-              return rack.get(this._racksmeta.target(), callback);
-            };
-            return raw;
-          }
-        },
-        snapshots: {
-          model: function(raw) {
-            return raw;
-          }
-        },
-        snapshotDetails: function(callback) {
-          return rack.get(this._racksmeta.target() + '/snapshots/detail', callback);
-        }
-      };
-      this.cloudDatabases = {
-        instances: {
-          model: function(raw) {
-            raw.details = function(callback) {
-              return rack.get(this._racksmeta.target(), callback);
-            };
-            raw.action = function(options, callback) {
-              return rack.post(this._racksmeta.target() + '/action', options, callback);
-            };
-            raw.restart = function(callback) {
-              return raw.action({
-                restart: {}
-              }, callback);
-            };
-            raw.resize = function(flavorRef, callback) {
-              return raw.action({
-                resize: {
-                  "flavorRef": flavorRef
-                }
-              }, callback);
-            };
-            raw.listDatabases = function(callback) {
-              return rack.get(this._racksmeta.target() + '/databases', callback);
-            };
-            raw.listUsers = function(callback) {
-              return rack.get(this._racksmeta.target() + '/users', callback);
-            };
-            raw.listFlavors = function(callback) {
-              return rack.get(this._racksmeta.target() + '/flavors', callback);
-            };
-            raw.listBackups = function(callback) {
-              return rack.get(this._racksmeta.target() + '/backups', callback);
-            };
-            raw.enableRoot = function(callback) {
-              return rack.post(this._racksmeta.target() + '/root', '', callback);
-            };
-            return raw;
-          }
-        }
-      };
+      this.cloudFiles = require('./products/cloudFiles.js')(rack);
+      this.autoscale = require('./products/autoscale.js')(rack);
+      this.cloudBlockStorage = require('./products/cloudBlockStorage.js')(rack);
+      this.cloudDatabases = require('./products/cloudDatabases.js')(rack);
       this.cloudOrchestration = {};
-      this.cloudQueues = {
-        queues: {
-          model: function(raw) {
-            raw.listMessages = function(callback) {
-              return rack.get(this._racksmeta.target() + '/claims', callback);
-            };
-            return raw;
-          }
-        }
-      };
-      this.cloudBackup = {
-        configurations: {
-          _racksmeta: {
-            noResource: true,
-            resourceString: 'backup-configuration'
-          },
-          model: function(raw) {
-            return raw;
-          }
-        },
-        agents: {
-          _racksmeta: {
-            noResource: true,
-            resourceString: 'user/agents'
-          },
-          model: function(raw) {
-            return raw;
-          }
-        }
-      };
-      this.cloudDNS = {
-        limits: {
-          model: function(raw) {
-            return raw;
-          }
-        },
-        domains: {
-          _racksmeta: {
-            singular: 'domains'
-          },
-          model: function(raw) {
-            raw.details = function(callback) {
-              return rack.get(this._racksmeta.target(), callback);
-            };
-            raw.records = rack.subResource(this, raw.id, 'records');
-            raw.subdomains = rack.subResource(this, raw.id, 'subdomains');
-            return raw;
-          }
-        },
-        rdns: {
-          model: function(raw) {
-            return raw;
-          }
-        }
-      };
-      this.cloudImages = {
-        images: {
-          model: function(raw) {
-            raw.details = function(callback) {
-              return rack.get(this._racksmeta.target(), callback);
-            };
-            raw.members = function(callback) {
-              return rack.get(this._racksmeta.target() + '/members​', callback);
-            };
-            raw.addMember = function(tenant, callback) {
-              return rack.post(this._racksmeta.target() + '/members', {
-                "member": tenant
-              }, callback);
-            };
-            return raw;
-          }
-        },
-        tasks: {
-          model: function(raw) {
-            raw.details = function(callback) {
-              return rack.get(this._racksmeta.target(), callback);
-            };
-            return raw;
-          },
-          "import": function(imageName, imagePath, callback) {
-            return rack.post(this._racksmeta.target(), {
-              "type": "import",
-              "input": {
-                "image_properties": {
-                  "name": imageName
-                },
-                "import_from": imagePath
-              }
-            }, callback);
-          },
-          "export": function(imageUUID, container, callback) {
-            return rack.post(this._racksmeta.target(), {
-              "type": "export",
-              "input": {
-                "image_uuid": imageUUID,
-                "receiving_swift_container": container
-              }
-            }, callback);
-          }
-        }
-      };
-      this.cloudMonitoring = {
-        entities: {
-          _racksmeta: {
-            dontWrap: true
-          },
-          model: function(raw) {
-            raw.details = function(callback) {
-              return rack.get(this._racksmeta.target(), callback);
-            };
-            raw["delete"] = function(callback) {
-              return rack["delete"](this._racksmeta.target(), callback);
-            };
-            raw.update = function(options, callback) {
-              return rack.put(this._racksmeta.target(), options, callback);
-            };
-            raw.listChecks = function(callback) {
-              return rack.get(this._racksmeta.target() + '/checks', callback);
-            };
-            raw.listAlarms = function(callback) {
-              return rack.get(this._racksmeta.target() + '/alarms', callback);
-            };
-            return raw;
-          }
-        },
-        audits: {
-          _racksmeta: {
-            replyString: 'values'
-          },
-          model: function(raw) {
-            return raw;
-          }
-        },
-        checkTypes: {
-          _racksmeta: {
-            resourceString: 'check_types'
-          },
-          model: function(raw) {
-            raw.details = function(callback) {
-              return rack.get(this._racksmeta.target(), callback);
-            };
-            return raw;
-          }
-        },
-        monitoringZones: {
-          _racksmeta: {
-            resourceString: 'monitoring_zones'
-          },
-          model: function(raw) {
-            raw.details = function(callback) {
-              return rack.get(this._racksmeta.target(), callback);
-            };
-            return raw;
-          }
-        },
-        notifications: {
-          model: function(raw) {
-            raw.details = function(callback) {
-              return rack.get(this._racksmeta.target(), callback);
-            };
-            return raw;
-          }
-        },
-        agents: {
-          _racksmeta: {
-            replyString: 'values'
-          },
-          model: function(raw) {
-            raw.details = function(callback) {
-              return rack.get(this._racksmeta.target(), callback);
-            };
-            raw.connections = function(callback) {
-              return rack.get(this._racksmeta.target() + '/connections', callback);
-            };
-            return raw;
-          }
-        },
-        notification_plans: {
-          model: function(raw) {
-            return raw;
-          }
-        },
-        overview: function(callback) {
-          return rack.get(this._racksmeta.target() + '/views/overview', callback);
-        },
-        account: function(callback) {
-          return rack.get(this._racksmeta.target() + '/account', callback);
-        },
-        updateAccount: function(options, callback) {
-          return rack.put(this._racksmeta.target() + '/account', options, callback);
-        },
-        limits: function(callback) {
-          return rack.get(this._racksmeta.target() + '/limits', callback);
-        },
-        usage: function(callback) {
-          return rack.get(this._racksmeta.target() + '/usage', callback);
-        },
-        changelogs: function(callback) {
-          return rack.get(this._racksmeta.target() + '/changelogs/alarms', callback);
-        }
-      };
+      this.cloudQueues = require('./products/cloudQueues.js')(rack);
+      this.cloudBackup = require('./products/cloudBackup.js')(rack);
+      this.cloudDNS = require('./products/cloudDNS.js')(rack);
+      this.cloudImages = require('./products/cloudImages.js')(rack);
+      this.cloudMonitoring = require('./products/cloudMonitoring.js')(rack);
+      this.utils = require('./utils.js')(rack);
       this.servers = this.cloudServersOpenStack.servers;
       this.networks = this.cloudServersOpenStack.networks;
-      this.ngservers = this.cloudServersOpenStack.servers;
       this.nextgen = this.cloudServersOpenStack;
-      this.fgservers = this.cloudServers.servers;
       this.firstgen = this.cloudServers;
-      return this.clbs = this.cloudLoadBalancers.loadBalancers;
+      this.clbs = this.cloudLoadBalancers.loadBalancers;
+      this.dns = this.cloudDNS.domains;
+      return this.files = this.cloudFiles.containers;
     };
 
     return RacksJS;

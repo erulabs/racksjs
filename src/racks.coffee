@@ -1,6 +1,6 @@
 # Racks.coffee - A javascript SDK for the Rackspace Cloud - https://github.com/erulabs/racksjs
 # by Seandon Mooy
-"use strict"
+"use strict";
 module.exports = class RacksJS
 	constructor: (@authObj, callback) ->
 		@https_node = require 'https'
@@ -19,6 +19,9 @@ module.exports = class RacksJS
 		# Default endpoint (Rackspace v2.0 api)
 		unless @authObj.endpoint?
 			@authObj.endpoint = 'https://identity.api.rackspacecloud.com/v2.0'
+		# If we're using the LON endpoint, set the datacenter there automatically
+		if @authObj.endpoint is 'https://lon.identity.api.rackspacecloud.com/v2.0'
+			@datacenter = 'LON'
 		# Test mode
 		if !@authObj.test? then @test = no else @test = @authObj.test
 		unless @authObj.network?
@@ -47,11 +50,16 @@ module.exports = class RacksJS
 		@buildProducts()
 		# Authenticate
 		if @authObj.username? and @authObj.apiKey? and callback? then @authenticate @authObj, callback
-	log: (message, verbose) ->
+	log: () ->
 		if @verbosity is 0 then return false
 		date = new Date()
 		process.stdout.write(date.getMonth() + '/' + date.getDate() + ' ' + date.toTimeString().split(' ')[0] + ' ')
 		console.log.apply(@, arguments)
+	logerror: (message) ->
+		if @verbosity is 0 then return false
+		@log @clr.red + '---> Error' + @clr.reset + ':'
+		console.log.apply(@, arguments)
+		return false
 	https: (opts, callback) ->
 		if !opts.headers? then opts.headers = {}
 		# Save the plaintext option, but don't pass it along to HTTPS
@@ -60,10 +68,13 @@ module.exports = class RacksJS
 		# Send along auth token if we have one
 		if @authToken then opts.headers['X-Auth-Token'] = @authToken
 		# Always use JSON
-		opts.headers['Content-Type'] = 'application/json'
+		if !opts.headers['Content-Type']?
+			opts.headers['Content-Type'] = 'application/json'
 		# If we have data, JSON.stringify if needed and calc length
 		if opts.data?
-			if typeof opts.data is 'object' then opts.data = JSON.stringify(opts.data)
+			if typeof opts.data is 'object'
+				try opts.data = JSON.stringify(opts.data)
+				catch e then console.log e
 			opts.headers['Content-Length'] = opts.data.length
 		# Parse the passed URL for easy use with Node's HTTPS, but don't pass along the unneeded full URL
 		opts.url = @url.parse opts.url
@@ -101,18 +112,29 @@ module.exports = class RacksJS
 					if @verbosity > 0 and @verbosity < 4
 						@log @clr.green + 'Reply' + @clr.reset + ':', response.statusCode, @httpCodes[response.statusCode]
 					else if @verbosity > 3
-						@log @clr.green + 'Reply' + @clr.reset + ':', reply
-					callback reply
+						@log @clr.green + 'Reply' + @clr.reset + ':', response.statusCode, @httpCodes[response.statusCode]
+						@log '--->', @clr.cyan + 'Headers' + @clr.reset + ":\n", response.headers
+						@log '--->', @clr.cyan + 'Body' + @clr.reset + ":\n", reply
+					if callback?
+						if typeof reply is 'string'
+							if reply.length is 0
+								reply = false
+						callback reply
 				response.on 'error', (error) => @log error, opts
 			# Write data down the pipe (in the case of POST and PUTs, etc)
 			if opts.data? then request.write opts.data
 			request.end()
 	get: (url, callback) -> @https { method: 'GET', url: url }, callback
 	post: (url, data, callback) -> @https { method: 'POST', url: url, data: data }, callback
-	delete: (url, callback) -> 
+	delete: (url, data, callback) ->
+		unless data?
+			data = {}
+		if typeof data is 'function'
+			callback = data
+			data = {}
 		unless callback?
 			callback = () -> return false
-		@https { method: 'DELETE', url: url }, callback
+		@https { method: 'DELETE', url: url, data: data }, callback
 	put: (url, data, callback) -> @https { method: 'PUT', url: url, data: data }, callback
 	authenticate: (authObj, callback) ->
 		if !authObj.username? or !authObj.apiKey? then return callback { error: 'No username or apiKey provided to .authenticate()' }
@@ -187,6 +209,7 @@ module.exports = class RacksJS
 			_racksmeta: 
 				resourceString: subResource,
 				name: subResource,
+				singular: subResource,
 				target: () => return resource._racksmeta.target() + '/' + id + '/' + subResource
 		}
 	buildResource: (productName, resourceName, subResource) ->
@@ -211,26 +234,30 @@ module.exports = class RacksJS
 					obj = { id: obj }
 				if !obj.id? and !obj.name? then return @log '[INFO] .assume() relies on .target() which in turn requires the object argument to have a .id or .name - please define one or the other - alternatively you can pass a string, in which case skinny will assume youre providing an id'
 				@buildModel(resource, obj)
-			resource.new = (obj, callback) =>
-				data = {}
-				# This is a bug with CloudMonitoring - post requests are NOT wrapped with the resource object title
-				if resource._racksmeta.dontWrap?
-					data = obj
-				else
-					data[resource._racksmeta.singular] = obj
-				if resource._racksmeta.replyString?
-					replyString = resource._racksmeta.replyString
-				else
-					replyString = resource._racksmeta.name
-				rack.post resource._racksmeta.target(), data, (reply) =>
-					if reply[replyString]?
-						obj = reply[replyString]
-					else if reply[resource._racksmeta.singular]?
-						obj = reply[resource._racksmeta.singular]
+			if resource.new?
+				resource.new = resource.new(rack)
+			else
+				resource.new = (obj, callback) =>
+					data = {}
+					# This is a bug with CloudMonitoring - post requests are NOT wrapped with the resource object title
+					if resource._racksmeta.dontWrap?
+						data = obj
 					else
-						return callback(reply)
-					if callback?
-						callback(rack.buildModel(resource, obj))
+						data[resource._racksmeta.singular] = obj
+					if resource._racksmeta.replyString?
+						replyString = resource._racksmeta.replyString
+					else
+						replyString = resource._racksmeta.name
+					rack.post resource._racksmeta.target(), data, (reply) =>
+						if reply[replyString]?
+							obj = reply[replyString]
+						else if reply[resource._racksmeta.singular]?
+							obj = reply[resource._racksmeta.singular]
+						else
+							if callback?
+								return callback(reply)
+						if callback?
+							callback(rack.buildModel(resource, obj))
 		return resource
 	buildCatalog: (serviceCatalog) ->
 		rack = @
@@ -253,9 +280,12 @@ module.exports = class RacksJS
 							target = target[rack.network.toLowerCase() + 'URL']
 						if rack.test
 							target = 'https://MOCKAPI'
-						if target.substr(-1) isnt '/' then target = target + '/'
-						return target
-				}
+						if !target
+							rack.logerror 'No target was found with endpoint "' + rack.authObj.endpoint + '" and datacenter "' + rack.datacenter + '"'
+						else
+							if target.substr(-1) isnt '/' then target = target + '/'
+							return target
+					}
 				# Build out .products, which isolates the product catalog for tools like RacksUI - ie:
 				# make it friendlier to code against, less friendly to script against.
 				# RacksJS.products is, after an authentication, a kind of suped serviceCatalog - or rather, the full formal name
@@ -305,190 +335,19 @@ module.exports = class RacksJS
 			return callback(cbObj)
 		else
 			return callback(fakeReply)
-
 	buildProducts: () ->
 		rack = @
+
 		# http://docs.rackspace.com/servers/api/v2/cs-devguide/content/ch_api_operations.html
-		@cloudServersOpenStack =
-			networks:
-				_racksmeta:
-					resourceString: 'os-networksv2'
-				model: (raw) ->
-					raw.show = (callback) ->
-						if raw.label in [ 'public', 'private' ]
-							callback({
-								network:
-									id: raw.id
-									label: raw.label
-									cidr: undefined
-							})
-						else
-							rack.get @_racksmeta.target(), callback
-					raw.delete = (callback) -> rack.delete @_racksmeta.target(), callback
-					return raw
-			flavors:
-				model: (raw) ->
-					raw.details = (callback) -> rack.get @_racksmeta.target(), callback
-					raw.specs = (callback) -> rack.get @_racksmeta.target() + '/os-extra_specs', callback
-					return raw
-			images:
-				model: (raw) ->
-					raw.details = (callback) -> rack.get @_racksmeta.target(), callback
-					raw.delete = (callback) -> rack.delete @_racksmeta.target(), callback
-					return raw
-			servers:
-				_racksmeta:
-					requiredFields:
-						name: 'string'
-						imageRef: 'string'
-						flavorRef: 'string'
-				model: (raw) ->
-					raw.systemActive = (interval, callback) ->
-						if typeof interval is 'function'
-							callback = interval
-							interval = 15 * 1000
-						action = () =>
-							raw.details (reply) ->
-								if reply.status isnt "ACTIVE"
-									recurse()
-								else
-									callback(reply)
-						recurse = () => setTimeout(action, interval)
-						recurse()
-					raw.details = (callback) ->
-						rack.get @_racksmeta.target(), (reply) -> callback(reply.server)
-					raw.addresses = (callback) ->
-						rack.get @_racksmeta.target() + '/ips', callback
-					raw.delete = (callback) ->
-						rack.delete @_racksmeta.target(), callback
-					raw.update = (options, callback) ->
-						if !options.server? then options = { "server": options }
-						rack.put @_racksmeta.target(), options, callback
-					raw.action = (options, callback) ->
-						rack.post @_racksmeta.target() + '/action', options, callback
-					raw.changePassword = (password, callback) ->
-						raw.action { changePassword: { adminPass: password } }, callback
-					raw.reboot = (type, callback) ->
-						if typeof type is 'function' then cb = type; type = 'SOFT'
-						raw.action { reboot: { type: type } }, callback
-					raw.rescue = (callback) ->
-						raw.action { rescue: null }, callback
-					raw.unrescue = (callback) ->
-						raw.action { unrescue: null }, callback
-					raw.createImage = (options, callback) ->
-						if typeof options is 'string' then options = { "createImage": { "name": options } }
-						raw.action options, callback
-					raw.serverActions = (callback) ->
-						rack.get @_racksmeta.target() + '/os-instance-actions', callback
-					raw.showServerAction = (id, callback) ->
-						rack.get @_racksmeta.target() + '/os-instance-actions/' + id, callback
-					raw.resize = (options, callback) ->
-						if typeof options == 'string' then options = { "flavorRef": options }
-						raw.action { resize: options }, callback
-					raw.confirmResize = (callback) ->
-						raw.action { confirmResize: null }, callback
-					raw.revertResize = (callback) ->
-						raw.action { revertResize: null }, callback
-					raw.rebuild = (options, callback) ->
-						raw.action { rebuild: options }, callback
-					raw.attachVolume = (options, callback) ->
-						rack.post @_racksmeta.target() + '/os-volume_attachments', options, callback
-					raw.volumes = (callback) ->
-						rack.get @_racksmeta.target() + '/os-volume_attachments', callback
-					raw.volumeDetails = (id, callback) ->
-						rack.get @_racksmeta.target() + '/os-volume_attachments/' + id, callback
-					raw.detachVolume = (callback) ->
-						rack.delete @_racksmeta.target() + '/os-volume_attachments/' + id, callback
-					raw.metadata = (callback) ->
-						rack.get @_racksmeta.target() + '/metadata', callback
-					raw.setMetadata = (options, callback) ->
-						if !options.metadata? then options = { 'metadata': options }
-						if !callback? then callback = -> return false
-						rack.put @_racksmeta.target() + '/metadata', options, callback
-					raw.updateMetadata = (options, callback) ->
-						if !options.metadata? then options = { 'metadata': options }
-						rack.post @_racksmeta.target() + '/metadata', options, callback
-					raw.getMetadataItem = (key, callback) ->
-						rack.get @_racksmeta.target() + '/metadata/' + key, callback
-					raw.setMetadataItem = (key, options, callback) ->
-						if !options.metadata? then options = { 'metadata': options }
-						rack.put @_racksmeta.target() + '/metadata/' + key, options, callback
-					raw.deleteMetadataItem = (key, callback) ->
-						rack.delete @_racksmeta.target() + '/metadata/' + key, callback
-					raw.getVips = (callback) ->
-						rack.get @_racksmeta.target() + '/os-virtual-interfacesv2', callback
-					raw.attachNetwork = (options, callback) ->
-						if !options.metadata? then options = { 'virtual_interface': options }
-						rack.post @_racksmeta.target() + '/os-virtual-interfacesv2', options, callback
-					return raw
-			keys:
-				_racksmeta:
-					resourceString: 'os-keypairs'
-				model: (raw) ->
-					raw.delete = (callback) -> rack.delete @_racksmeta.target(), callback
-					raw.details = (callback) ->
-						rack.get @_racksmeta.target(), (reply) -> callback(reply)
-					return raw
+		@cloudServersOpenStack = require('./products/cloudServersOpenStack.js')(rack)
+
 		# http://docs.rackspace.com/servers/api/v1.0/cs-devguide/content/API_Operations-d1e1720.html
 		# This is very old stuff - First Gen servers. Never use this.
-		@cloudServers =
-			servers:
-				model: (raw) ->
-					raw.addresses = (callback) ->
-						rack.get @_racksmeta.target() + '/ips', callback
-					return raw
-			createImage: (options, callback) ->
-				if options.name? and options.serverId?
-					rack.post @_racksmeta.target() + 'images', { "image": options }, callback
-				else
-					rack.log 'Must provide "name" and "serverId" for firstgen.createImage({})'
-			images:
-				model: (raw) ->
-					return raw
-			flavors:
-				model: (raw) ->
-					return raw
+		@cloudServers = require('./products/cloudServers.js')(rack)
+
 		# http://docs.rackspace.com/loadbalancers/api/v1.0/clb-devguide/content/API_Operations-d1e1354.html
-		@cloudLoadBalancers =
-			algorithms:
-				_racksmeta:
-					resourceString: 'loadbalancers/algorithms'
-					name: 'algorithms'
-				model: (raw) ->
-					return raw
-			alloweddomains:
-				_racksmeta:
-					resourceString: 'loadbalancers/alloweddomains'
-					name: 'alloweddomains'
-				model: (raw) ->
-					return raw
-			protocols:
-				_racksmeta:
-					resourceString: 'loadbalancers/protocols'
-					name: 'protocols'
-				model: (raw) ->
-					return raw
-			loadBalancers:
-				_racksmeta:
-					resourceString: 'loadbalancers'
-				model: (raw) ->
-					raw.details = (callback) ->
-						rack.get @_racksmeta.target(), callback
-					raw.listVirtualIPs = (callback) ->
-						rack.get @_racksmeta.target() + '/virtualips', callback
-					raw.usage = (callback) ->
-						rack.get @_racksmeta.target() ' /usage/current', callback
-					raw.sessionpersistence =
-						list: (callback) -> rack.get @_racksmeta.target() + '/sessionpersistence', callback
-						enable: (callback) -> rack.put @_racksmeta.target() + '/sessionpersistence', callback
-						disable: (callback) -> rack.delete @_racksmeta.target() + '/sessionpersistence', callback
-					raw.connectionlogging =
-						list: (callback) -> rack.get @_racksmeta.target() + '/connectionlogging', callback
-						enable: (callback) -> rack.put @_racksmeta.target() + '/connectionlogging?enabled=true', callback
-						disable: (callback) -> rack.put @_racksmeta.target() + '/connectionlogging?enabled=false', callback
-					raw.listACL = (callback) -> rack.get @_racksmeta.target() + '/accesslist', callback
-					raw.nodes = rack.subResource @, raw.id, 'nodes'
-					return raw
+		@cloudLoadBalancers = require('./products/cloudLoadBalancers.js')(rack)
+
 		# http://docs.rackspace.com/files/api/v1/cf-devguide/content/API_Operations_for_CDN_Services-d1e2386.html
 		# FIXME: This should NOT be it's own product... Otherwise we duplicate a very large amount of code from RacksJS.cloudFiles
 		#@cloudFilesCDN =
@@ -503,284 +362,48 @@ module.exports = class RacksJS
 		#				_racksmeta:
 		#					name: containerName
 		#			return catalog
-		@cloudFilesCDN = {};
-		@cloudBigData = {};
+		@cloudFilesCDN = {}
+		@cloudBigData = {}
+
 		# http://docs.rackspace.com/files/api/v1/cf-devguide/content/API_Operations_for_Storage_Services-d1e942.html
-		@cloudFiles =
-			containers:
-				_racksmeta:
-					# Containers are accessed with a GET directly to the storage endpoint - ie: there is no URL path beyond the product base
-					resourceString: ''
-					plaintext: yes
-				model: (containerName) ->
-					if containerName.id?
-						containerName = containerName.id
-					if containerName.name?
-						containerName = containerName.name
-					return {
-						name: containerName
-						_racksmeta:
-							name: containerName
-						details: (callback) ->
-							rack.get @_racksmeta.target(), callback
-						listObjects: (callback) ->
-							rack.https({
-								method: 'GET',
-								plaintext: true,
-								url: this._racksmeta.target()
-							}, cb)
-						upload: (options, callback) ->
-							if !options?
-								options = {};
-							if !callback?
-								callback = () -> return false
-							if !options.headers?
-								options.headers = {}
-							if options.file?
-								inputStream = rack.fs.createReadStream(options.file)
-								options.headers['content-length'] = rack.fs.statSync(options.file).size
-							else if options.stream?
-								inputStream = options.stream
-							
-							if !options.path?
-								if options.file?
-									options.path = rack.path.basename(options.file)
-								else
-									options.path = 'STREAM'
+		@cloudFiles = require('./products/cloudFiles.js')(rack)
 
-							inputStream.on 'response', (response) ->
-								response.headers =
-									'content-type': response.headers['content-type']
-									'content-length': response.headers['content-length']
-
-							options.method = 'PUT'
-							options.headers['X-Auth-Token'] = rack.authToken
-							options.upload = true
-							url = rack.url.parse this._racksmeta.target()
-							options.host = url.host
-							options.path = url.path + '/' + options.path
-							options.container = this.name
-
-							apiStream = rack.https_node.request options, callback
-							if inputStream
-								inputStream.pipe(apiStream)
-
-							return apiStream
-
-					}
 		# http://docs.rackspace.com/cas/api/v1.0/autoscale-devguide/content/API_Operations.html
-		@autoscale =
-			groups:
-				model: (raw) ->
-					raw.listPolicies = (callback) ->
-						rack.get @_racksmeta.target() + '/policies', callback
-					raw.listConfigurations = (callback) ->
-						rack.get @_racksmeta.target() + '/config', callback
-					return raw
+		@autoscale = require('./products/autoscale.js')(rack)
+
 		# http://docs.rackspace.com/cbs/api/v1.0/cbs-devguide/content/volume.html
-		@cloudBlockStorage =
-			volumes:
-				model: (raw) ->
-					raw.details = (callback) ->
-						rack.get @_racksmeta.target(), callback
-					raw.delete = (callback) ->
-						rack.delete @_racksmeta.target(), callback
-					raw.rename = (options, callback) ->
-						if typeof options is 'string' then options = { "name": options }
-						if !options.volume? then options = { "volume": options }
-						rack.put @_racksmeta.target(), options, callback
-					raw.snapshot = (options, callback) ->
-						if typeof options is 'string' then options = { "snapshot": { "display_name": options } }
-						options.snapshot.volume_id = raw.id
-						rack.post @cloudBlockStorage._racksmeta.target() + '/snapshots', options, callback
-					return raw
-			volumeDetails: (callback) ->
-				rack.get @_racksmeta.target() + '/volumes/detail', callback
-			types:
-				_racksmeta:
-					replyString: 'volume_types'
-				model: (raw) ->
-					raw.details = (callback) ->
-						rack.get @_racksmeta.target(), callback
-					return raw
-			snapshots:
-				model: (raw) ->
-					return raw
-			snapshotDetails: (callback) ->
-				rack.get @_racksmeta.target() + '/snapshots/detail', callback
+		@cloudBlockStorage = require('./products/cloudBlockStorage.js')(rack)
+
 		# http://docs.rackspace.com/cdb/api/v1.0/cdb-devguide/content/API_Operations-d1e2264.html
-		@cloudDatabases =
-			instances:
-				model: (raw) ->
-					raw.details = (callback) ->
-						rack.get @_racksmeta.target(), callback
-					raw.action = (options, callback) ->
-						rack.post @_racksmeta.target() + '/action', options, callback
-					raw.restart = (callback) ->
-						raw.action { restart: {} }, callback
-					raw.resize = (flavorRef, callback) ->
-						raw.action { resize:
-							"flavorRef": flavorRef
-						}, callback
-					raw.listDatabases = (callback) ->
-						rack.get @_racksmeta.target() + '/databases', callback
-					raw.listUsers = (callback) ->
-						rack.get @_racksmeta.target() + '/users', callback
-					raw.listFlavors = (callback) ->
-						rack.get @_racksmeta.target() + '/flavors', callback
-					raw.listBackups = (callback) ->
-						rack.get @_racksmeta.target() + '/backups', callback
-					raw.enableRoot = (callback) ->
-						rack.post @_racksmeta.target() + '/root', '', callback
-					return raw
+		@cloudDatabases = require('./products/cloudDatabases.js')(rack)
+
 		# NO DOCUMENTATION AVAILABLE
 		@cloudOrchestration = {}
+		
 		# http://docs.rackspace.com/queues/api/v1.0/cq-devguide/content/API_Operations_dle001.html
-		@cloudQueues =
-			queues:
-				model: (raw) ->
-					raw.listMessages = (callback) ->
-						rack.get @_racksmeta.target() + '/claims', callback
-					return raw
-		# http://docs.rackspace.com/rcbu/api/v1.0/rcbu-devguide/content/operations.html
-		@cloudBackup =
-			configurations:
-				_racksmeta:
-					noResource: yes
-					resourceString: 'backup-configuration'
-				model: (raw) ->
-					return raw
-			agents:
-				_racksmeta:
-					noResource: yes
-					resourceString: 'user/agents'
-				model: (raw) ->
-					return raw
-		# http://docs.rackspace.com/cdns/api/v1.0/cdns-devguide/content/API_Operations-d1e2264.html
-		@cloudDNS =
-			limits:
-				model: (raw) ->
-					return raw
-			domains:
-				_racksmeta:
-					singular: 'domains'
-				model: (raw) ->
-					raw.details = (callback) ->
-						rack.get @_racksmeta.target(), callback
-					raw.records = rack.subResource @, raw.id, 'records'
-					raw.subdomains = rack.subResource @, raw.id, 'subdomains'
-					return raw
-			rdns:
-				model: (raw) ->
-					return raw
-		# http://docs.rackspace.com/images/api/v2/ci-devguide/content/API_Operations.html
-		@cloudImages =
-			images:
-				model: (raw) ->
-					raw.details = (callback) ->
-						rack.get @_racksmeta.target(), callback
-					raw.members = (callback) ->
-						rack.get @_racksmeta.target() + '/members​', callback
-					raw.addMember = (tenant, callback) ->
-						rack.post @_racksmeta.target() + '/members', {
-							"member": tenant
-						}, callback
-					return raw
-			tasks:
-				model: (raw) ->
-					raw.details = (callback) ->
-						rack.get @_racksmeta.target(), callback
-					return raw
-				import: (imageName, imagePath, callback) ->
-					rack.post @_racksmeta.target(), {
-						"type": "import",
-						"input": {
-							"image_properties": {
-								"name": imageName
-							},
-							"import_from": imagePath
-						}
-					}, callback
-				export: (imageUUID, container, callback) ->
-					rack.post @_racksmeta.target(), {
-						"type": "export",
-						"input": {
-							"image_uuid": imageUUID,
-							"receiving_swift_container": container
-						}
-					}, callback
-		# http://docs.rackspace.com/cm/api/v1.0/cm-devguide/content/service-api-operations.html
-		@cloudMonitoring =
-			entities:
-				_racksmeta:
-					dontWrap: yes
-				model: (raw) ->
-					raw.details = (callback) ->
-						rack.get @_racksmeta.target(), callback
-					raw.delete = (callback) ->
-						rack.delete @_racksmeta.target(), callback
-					raw.update = (options, callback) ->
-						rack.put @_racksmeta.target(), options, callback
-					raw.listChecks = (callback) ->
-						rack.get @_racksmeta.target() + '/checks', callback
-					raw.listAlarms = (callback) ->
-						rack.get @_racksmeta.target() + '/alarms', callback
-					return raw
-			audits:
-				_racksmeta:
-					replyString: 'values'
-				model: (raw) ->
-					return raw
-			checkTypes:
-				_racksmeta:
-					resourceString: 'check_types'
-				model: (raw) ->
-					raw.details = (callback) ->
-						rack.get @_racksmeta.target(), callback
-					return raw
-			monitoringZones:
-				_racksmeta:
-					resourceString: 'monitoring_zones'
-				model: (raw) ->
-					raw.details = (callback) ->
-						rack.get @_racksmeta.target(), callback
-					return raw
-			notifications:
-				model: (raw) ->
-					raw.details = (callback) ->
-						rack.get @_racksmeta.target(), callback
-					return raw
-			agents:
-				_racksmeta:
-					replyString: 'values'
-				model: (raw) ->
-					raw.details = (callback) ->
-						rack.get @_racksmeta.target(), callback
-					raw.connections = (callback) ->
-						rack.get @_racksmeta.target() + '/connections', callback
-					return raw
-			notification_plans:
-				model: (raw) ->
-					return raw
-			overview : (callback) ->
-				rack.get @_racksmeta.target() + '/views/overview', callback
-			account: (callback) ->
-				rack.get @_racksmeta.target() + '/account', callback
-			updateAccount: (options, callback) ->
-				rack.put @_racksmeta.target() + '/account', options, callback
-			limits: (callback) ->
-				rack.get @_racksmeta.target() + '/limits', callback
-			usage: (callback) ->
-				rack.get @_racksmeta.target() + '/usage', callback
-			changelogs: (callback) ->
-				rack.get @_racksmeta.target() + '/changelogs/alarms', callback
+		@cloudQueues = require('./products/cloudQueues.js')(rack)
 
+		# http://docs.rackspace.com/rcbu/api/v1.0/rcbu-devguide/content/operations.html
+		@cloudBackup = require('./products/cloudBackup.js')(rack)
+
+		# http://docs.rackspace.com/cdns/api/v1.0/cdns-devguide/content/API_Operations-d1e2264.html
+		@cloudDNS = require('./products/cloudDNS.js')(rack)
+
+		# http://docs.rackspace.com/images/api/v2/ci-devguide/content/API_Operations.html
+		@cloudImages = require('./products/cloudImages.js')(rack)
+
+		# http://docs.rackspace.com/cm/api/v1.0/cm-devguide/content/service-api-operations.html
+		@cloudMonitoring = require('./products/cloudMonitoring.js')(rack)
+
+		# Include utilties - these are common and useful RacksJS scripts meant primarily for use by Rackers
+		# but Rackspace customers may also find them useful.
+		@utils = require('./utils.js')(rack)
 
 		# Shortcuts:
 		@servers = @cloudServersOpenStack.servers
 		@networks = @cloudServersOpenStack.networks
-		@ngservers = @cloudServersOpenStack.servers
 		@nextgen = @cloudServersOpenStack
-		@fgservers = @cloudServers.servers
 		@firstgen = @cloudServers
 		@clbs = @cloudLoadBalancers.loadBalancers
+		@dns = @cloudDNS.domains
+		@files = @cloudFiles.containers
