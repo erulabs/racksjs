@@ -10,10 +10,15 @@ Racksjs is mostly an attempt by the author to get intimate with the Rackspace AP
 
 Proper documentation and a lot more examples are soon to come - we're still missing a lot of functionality, but that too is on its way! For now, here is some example code:
 
-### Usage ###
+## Installation & Usage ##
+  1. Either clone the git repo or `npm install racksjs`
+  2. If you've cloned the repo, it's quite easy to get started by simply using a file in "examples" to your liking.
+  3. If you've installed the NPM module, you can use the below example to get started on a script.
+  4. Authenticate with a "username" and "apiKey" (see below)
+
 ```html
 // Include racks.js and start it with a few settings
-new (require('../racks.js'))({
+new (require('racksjs'))({
     username: 'Rackspace cloud username',
     apiKey: 'Rackspace cloud API KEY',
     verbosity: 1, // 0 - 5, 0 is no output, 1 is script only (rs.log), 5 is debug.
