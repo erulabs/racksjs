@@ -19,14 +19,20 @@
           raw.listChecks = function(callback) {
             return rack.get(this._racksmeta.target() + '/checks', callback);
           };
-          raw.listAlarms = function(callback) {
-            return rack.get(this._racksmeta.target() + '/alarms', callback);
-          };
           raw.getCheck = function(checkID, callback) {
             return rack.get(this._racksmeta.target() + '/checks/' + checkID, callback);
           };
           raw.createCheck = function(options, callback) {
-            return rack.put(this._racksmeta.target() + '/checks', options, callback);
+            return rack.post(this._racksmeta.target() + '/checks', options, callback);
+          };
+          raw.listAlarms = function(callback) {
+            return rack.get(this._racksmeta.target() + '/alarms', callback);
+          };
+          raw.getAlarm = function(alarmID, callback) {
+            return rack.get(this._racksmeta.target() + '/alarms/' + alarmID, callback);
+          };
+          raw.createAlarm = function(options, callback) {
+            return rack.post(this._racksmeta.target() + '/alarms', options, callback);
           };
           return raw;
         }
