@@ -15,6 +15,11 @@ module.exports = (rack) ->
 				rack.get @_racksmeta.target() + '/checks', callback
 			raw.listAlarms = (callback) ->
 				rack.get @_racksmeta.target() + '/alarms', callback
+                        raw.getCheck = (checkID, callback) ->
+                                rack.get @_racksmeta.target() + '/checks/' + checkID, callback
+                        raw.createCheck = (options, callback) ->
+                                rack.put @_racksmeta.target() + '/checks', options, callback
+
 			return raw
 	audits:
 		_racksmeta:
