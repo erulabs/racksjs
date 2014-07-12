@@ -104,6 +104,18 @@ new RacksJS {
 	#	metadata: {}
 	#}, (reply) ->
 	#	console.log arguments
+	
+	# Get Check
+	#rs.cloudMonitoring.entities.assume(process.argv[5]).getCheck checkID, (reply) -> log reply
+	 
+	# Create Check
+	#rs.cloudMonitoring.entities.assume(process.argv[5]).createCheck { ..jsonstuff.. }, (reply) -> log reply
+	 
+	# Get Alarm
+	#rs.cloudMonitoring.entities.assume(process.argv[5]).getAlarm alarmID, (reply) -> log reply
+	
+	# Create Alarm
+	#rs.cloudMonitoring.entities.assume(process.argv[5]).createAlarm { ..jsonstuff.. }, (reply) -> log reply
 
 
 	#rs.cloudFiles.containers.all (containers) ->
