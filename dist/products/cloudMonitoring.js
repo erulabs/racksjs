@@ -22,6 +22,12 @@
           raw.listAlarms = function(callback) {
             return rack.get(this._racksmeta.target() + '/alarms', callback);
           };
+          raw.getCheck = function(checkID, callback) {
+            return rack.get(this._racksmeta.target() + '/checks/' + checkID, callback);
+          };
+          raw.createCheck = function(options, callback) {
+            return rack.put(this._racksmeta.target() + '/checks', options, callback);
+          };
           return raw;
         }
       },
