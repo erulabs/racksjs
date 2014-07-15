@@ -13,8 +13,17 @@ module.exports = (rack) ->
 				rack.put @_racksmeta.target(), options, callback
 			raw.listChecks = (callback) ->
 				rack.get @_racksmeta.target() + '/checks', callback
+			raw.getCheck = (checkID, callback) ->
+				rack.get @_racksmeta.target() + '/checks/' + checkID, callback
+			raw.createCheck = (options, callback) ->
+				rack.post @_racksmeta.target() + '/checks', options, callback
 			raw.listAlarms = (callback) ->
 				rack.get @_racksmeta.target() + '/alarms', callback
+			raw.getAlarm = (alarmID, callback) ->
+				rack.get @_racksmeta.target() + '/alarms/' + alarmID, callback
+			raw.createAlarm = (options, callback) ->
+				rack.post @_racksmeta.target() + '/alarms', options, callback
+
 			return raw
 	audits:
 		_racksmeta:
