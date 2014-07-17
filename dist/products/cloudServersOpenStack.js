@@ -64,22 +64,18 @@
               callback = interval;
               interval = 15 * 1000;
             }
-            action = (function(_this) {
-              return function() {
-                return raw.details(function(reply) {
-                  if (reply.status !== "ACTIVE") {
-                    return recurse();
-                  } else {
-                    return callback(reply);
-                  }
-                });
-              };
-            })(this);
-            recurse = (function(_this) {
-              return function() {
-                return setTimeout(action, interval);
-              };
-            })(this);
+            action = function() {
+              return raw.details(function(reply) {
+                if (reply.status !== "ACTIVE") {
+                  return recurse();
+                } else {
+                  return callback(reply);
+                }
+              });
+            };
+            recurse = function() {
+              return setTimeout(action, interval);
+            };
             return recurse();
           };
           raw.details = function(callback) {
