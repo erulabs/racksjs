@@ -192,16 +192,16 @@ module.exports = class RacksJS
                         response = []
                         reply[metaName].forEach (raw) =>
                             response.push @buildModel resource, raw
-                        callback response
+                        if callback? then callback response
                     else
-                        callback @buildModel resource, reply[metaName]
+                        if callback? then callback @buildModel resource, reply[metaName]
                 else
-                    callback reply[metaName]
+                    if callback? then callback reply[metaName]
             else if resource._racksmeta.plaintext?
                 response = []
                 reply.forEach (raw) =>
                     response.push @buildModel resource, raw
-                callback response
+                if callback? then callback response
             else if callback?
                 callback reply
     subResource: (resource, id, subResource) ->

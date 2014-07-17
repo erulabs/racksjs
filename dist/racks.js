@@ -296,19 +296,27 @@
                 reply[metaName].forEach(function(raw) {
                   return response.push(_this.buildModel(resource, raw));
                 });
-                return callback(response);
+                if (callback != null) {
+                  return callback(response);
+                }
               } else {
-                return callback(_this.buildModel(resource, reply[metaName]));
+                if (callback != null) {
+                  return callback(_this.buildModel(resource, reply[metaName]));
+                }
               }
             } else {
-              return callback(reply[metaName]);
+              if (callback != null) {
+                return callback(reply[metaName]);
+              }
             }
           } else if (resource._racksmeta.plaintext != null) {
             response = [];
             reply.forEach(function(raw) {
               return response.push(_this.buildModel(resource, raw));
             });
-            return callback(response);
+            if (callback != null) {
+              return callback(response);
+            }
           } else if (callback != null) {
             return callback(reply);
           }
