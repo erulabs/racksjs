@@ -39,16 +39,16 @@
                         }
                         ok();
                         describe("NextGen Flavors", function() {
-                          return it("can retrieve a list of flavors", function(ok) {
+                          it("can retrieve a list of flavors", function(ok) {
                             return rs.cloudServersOpenStack.flavors.all(function(reply) {
                               return ok();
                             });
                           });
-                        });
-                        describe("NextGen Images", function() {
-                          return it("can retrieve a list of images", function(ok) {
-                            return rs.cloudServersOpenStack.images.all(function(reply) {
-                              return ok();
+                          return describe("NextGen Images", function() {
+                            return it("can retrieve a list of images", function(ok) {
+                              return rs.cloudServersOpenStack.images.all(function(reply) {
+                                return ok();
+                              });
                             });
                           });
                         });

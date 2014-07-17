@@ -7,6 +7,7 @@ var source = [ 'src/racks.coffee', 'src/utils.coffee' ],
 	dest = 'dist',
 	gulp = require('gulp'),
 	coffee = require('gulp-coffee'),
+    coffeelint = require('gulp-coffeelint'),
 	uglify = require('gulp-uglify'),
 	concat = require('gulp-concat'),
 	rename = require('gulp-rename'),
@@ -14,6 +15,8 @@ var source = [ 'src/racks.coffee', 'src/utils.coffee' ],
 
 gulp.task('sources', function () {
 	return gulp.src(source)
+        .pipe(coffeelint())
+        .pipe(coffeelint.reporter())
 		.pipe(coffee())
 		.pipe(gulp.dest(dest))
 		.on('error', gutil.log);
@@ -21,6 +24,8 @@ gulp.task('sources', function () {
 
 gulp.task('products', function () {
 	return gulp.src(products)
+        .pipe(coffeelint())
+        .pipe(coffeelint.reporter())
 		.pipe(coffee())
 		.pipe(gulp.dest(dest + '/products'))
 		.on('error', gutil.log);
@@ -28,6 +33,8 @@ gulp.task('products', function () {
 
 gulp.task('tests', function () {
 	return gulp.src(test)
+        .pipe(coffeelint())
+        .pipe(coffeelint.reporter())
 		.pipe(coffee())
 		.pipe(concat('test.js'))
 		.pipe(gulp.dest('test'))

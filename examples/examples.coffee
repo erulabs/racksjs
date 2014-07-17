@@ -35,6 +35,8 @@ new RacksJS {
 	#
 	# at any time.
 
+	rs.nextgen.servers.all()
+
 	# Utilies
 	#rs.utils.rebuildLB '236777', (result) ->
 	#	if result

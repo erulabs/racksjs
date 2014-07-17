@@ -259,22 +259,20 @@
       model._racksmeta = {
         resource: template._racksmeta.name,
         product: template._racksmeta.product,
-        target: (function(_this) {
-          return function() {
-            var idOrName, target;
-            target = template._racksmeta.target();
-            idOrName = '';
-            if (target.substr(-1) === '/') {
-              target = target.substr(0, target.length - 1);
-            }
-            if (model.id != null) {
-              idOrName = model.id;
-            } else if (model.name != null) {
-              idOrName = model.name;
-            }
-            return target + '/' + idOrName;
-          };
-        })(this)
+        target: function() {
+          var idOrName, target;
+          target = template._racksmeta.target();
+          idOrName = '';
+          if (target.substr(-1) === '/') {
+            target = target.substr(0, target.length - 1);
+          }
+          if (model.id != null) {
+            idOrName = model.id;
+          } else if (model.name != null) {
+            idOrName = model.name;
+          }
+          return target + '/' + idOrName;
+        }
       };
       return model;
     };
@@ -298,19 +296,27 @@
                 reply[metaName].forEach(function(raw) {
                   return response.push(_this.buildModel(resource, raw));
                 });
-                return callback(response);
+                if (callback != null) {
+                  return callback(response);
+                }
               } else {
-                return callback(_this.buildModel(resource, reply[metaName]));
+                if (callback != null) {
+                  return callback(_this.buildModel(resource, reply[metaName]));
+                }
               }
             } else {
-              return callback(reply[metaName]);
+              if (callback != null) {
+                return callback(reply[metaName]);
+              }
             }
           } else if (resource._racksmeta.plaintext != null) {
             response = [];
             reply.forEach(function(raw) {
               return response.push(_this.buildModel(resource, raw));
             });
-            return callback(response);
+            if (callback != null) {
+              return callback(response);
+            }
           } else if (callback != null) {
             return callback(reply);
           }
@@ -324,11 +330,9 @@
           resourceString: subResource,
           name: subResource,
           singular: subResource,
-          target: (function(_this) {
-            return function() {
-              return resource._racksmeta.target() + '/' + id + '/' + subResource;
-            };
-          })(this)
+          target: function() {
+            return resource._racksmeta.target() + '/' + id + '/' + subResource;
+          }
         }
       });
     };
@@ -380,7 +384,9 @@
               };
             }
             if ((obj.id == null) && (obj.name == null)) {
-              return _this.log('[INFO] .assume() relies on .target() which in turn requires the object argument to have a .id or .name - please define one or the other - alternatively you can pass a string, in which case skinny will assume youre providing an id');
+              _this.log('[INFO] .assume() relies on .target() which in turn requires the object ');
+              _this.log('argument to have a .id or .name - please define one or the other - ');
+              _this.log('alternatively you can pass a string, in which case skinny will assume youre providing an id');
             }
             return _this.buildModel(resource, obj);
           };
@@ -388,36 +394,34 @@
         if (resource["new"] != null) {
           resource["new"] = resource["new"](rack);
         } else {
-          resource["new"] = (function(_this) {
-            return function(obj, callback) {
-              var data, replyString;
-              data = {};
-              if (resource._racksmeta.dontWrap != null) {
-                data = obj;
+          resource["new"] = function(obj, callback) {
+            var data, replyString;
+            data = {};
+            if (resource._racksmeta.dontWrap != null) {
+              data = obj;
+            } else {
+              data[resource._racksmeta.singular] = obj;
+            }
+            if (resource._racksmeta.replyString != null) {
+              replyString = resource._racksmeta.replyString;
+            } else {
+              replyString = resource._racksmeta.name;
+            }
+            return rack.post(resource._racksmeta.target(), data, function(reply) {
+              if (reply[replyString] != null) {
+                obj = reply[replyString];
+              } else if (reply[resource._racksmeta.singular] != null) {
+                obj = reply[resource._racksmeta.singular];
               } else {
-                data[resource._racksmeta.singular] = obj;
-              }
-              if (resource._racksmeta.replyString != null) {
-                replyString = resource._racksmeta.replyString;
-              } else {
-                replyString = resource._racksmeta.name;
-              }
-              return rack.post(resource._racksmeta.target(), data, function(reply) {
-                if (reply[replyString] != null) {
-                  obj = reply[replyString];
-                } else if (reply[resource._racksmeta.singular] != null) {
-                  obj = reply[resource._racksmeta.singular];
-                } else {
-                  if (callback != null) {
-                    return callback(reply);
-                  }
-                }
                 if (callback != null) {
-                  return callback(rack.buildModel(resource, obj));
+                  return callback(reply);
                 }
-              });
-            };
-          })(this);
+              }
+              if (callback != null) {
+                return callback(rack.buildModel(resource, obj));
+              }
+            });
+          };
         }
       }
       return resource;
@@ -444,13 +448,11 @@
                   dc = rack.access.user['RAX-AUTH:defaultRegion'];
                 }
                 if (this.endpoints.length > 1) {
-                  this.endpoints.forEach((function(_this) {
-                    return function(endpoint) {
-                      if (endpoint.region === dc) {
-                        return target = endpoint[rack.network.toLowerCase() + 'URL'];
-                      }
-                    };
-                  })(this));
+                  this.endpoints.forEach(function(endpoint) {
+                    if (endpoint.region === dc) {
+                      return target = endpoint[rack.network.toLowerCase() + 'URL'];
+                    }
+                  });
                 } else {
                   target = this.endpoints[0];
                 }
