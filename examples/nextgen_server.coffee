@@ -14,3 +14,4 @@ new RacksJS {
 		## We can poll until the build is complete
 		server.systemActive (details) ->
 			server.delete()
+
