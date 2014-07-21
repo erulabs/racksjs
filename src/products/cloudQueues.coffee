@@ -19,4 +19,8 @@ module.exports = (rack) ->
         model: (raw) ->
             raw.listMessages = (callback) ->
                 rack.get @_racksmeta.target() + '/claims', callback
+            raw.delete = (callback) ->
+                rack.delete @_racksmeta.target(), callback
+            raw.check = (callback) ->
+                rack.get @_racksmeta.target(), callback
             return raw
