@@ -30,6 +30,9 @@
           raw["delete"] = function(callback) {
             return rack["delete"](this._racksmeta.target(), callback);
           };
+          raw.check = function(callback) {
+            return rack.get(this._racksmeta.target(), callback);
+          };
           return raw;
         }
       }

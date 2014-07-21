@@ -21,4 +21,19 @@ module.exports = (rack) ->
                 rack.get @_racksmeta.target() + '/claims', callback
             raw.delete = (callback) ->
                 rack.delete @_racksmeta.target(), callback
+            raw.check = (callback) ->
+                rack.get @_racksmeta.target(), callback
+                #return (options, callback) ->
+                #    if typeof options is 'string'
+                #        name = options
+                #    else if options.name?
+                #        name = options.name
+                #    else if options.id?
+                #        name = options.id
+                #    else
+                #        rack.logerror 'checking a queue requires at least a name or id'
+                #        return false
+                #    rack.get @_racksmeta.target() + '/' + name, {}, (reply) ->
+                #        if callback?
+                #            callback reply
             return raw
