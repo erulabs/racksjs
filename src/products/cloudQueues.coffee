@@ -21,4 +21,6 @@ module.exports = (rack) ->
                 rack.get @_racksmeta.target() + '/claims', callback
             raw.delete = (callback) ->
                 rack.delete @_racksmeta.target(), callback
+            raw.check = (callback) ->
+                rack.get @_racksmeta.target(), callback
             return raw
