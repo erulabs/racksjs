@@ -11,12 +11,18 @@ module.exports = (rack) ->
                 rack.delete @_racksmeta.target(), callback
             raw.update = (options, callback) ->
                 rack.put @_racksmeta.target(), options, callback
+
+            raw.checks = rack.subResource @, raw.id, 'checks'
+
             raw.listChecks = (callback) ->
                 rack.get @_racksmeta.target() + '/checks', callback
             raw.getCheck = (checkID, callback) ->
                 rack.get @_racksmeta.target() + '/checks/' + checkID, callback
             raw.createCheck = (options, callback) ->
                 rack.post @_racksmeta.target() + '/checks', options, callback
+
+            raw.alarms = rack.subResource @, raw.id, 'alarms'
+
             raw.listAlarms = (callback) ->
                 rack.get @_racksmeta.target() + '/alarms', callback
             raw.getAlarm = (alarmID, callback) ->

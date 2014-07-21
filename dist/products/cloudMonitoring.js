@@ -16,6 +16,7 @@
           raw.update = function(options, callback) {
             return rack.put(this._racksmeta.target(), options, callback);
           };
+          raw.checks = rack.subResource(this, raw.id, 'checks');
           raw.listChecks = function(callback) {
             return rack.get(this._racksmeta.target() + '/checks', callback);
           };
@@ -25,6 +26,7 @@
           raw.createCheck = function(options, callback) {
             return rack.post(this._racksmeta.target() + '/checks', options, callback);
           };
+          raw.alarms = rack.subResource(this, raw.id, 'alarms');
           raw.listAlarms = function(callback) {
             return rack.get(this._racksmeta.target() + '/alarms', callback);
           };
