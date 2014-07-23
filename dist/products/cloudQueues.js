@@ -49,6 +49,9 @@
           raw.getMetadata = function(key, callback) {
             return rack.get(this._racksmeta.target() + '/metadata', callback);
           };
+          raw.stats = function(callback) {
+            return rack.get(this._racksmeta.target() + '/stats', callback);
+          };
           return raw;
         }
       }

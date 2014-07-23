@@ -29,4 +29,6 @@ module.exports = (rack) ->
                 rack.put @_racksmeta.target() + '/metadata', options, callback
             raw.getMetadata = (key, callback) ->
                 rack.get @_racksmeta.target() + '/metadata', callback
+            raw.stats = (callback) ->
+                rack.get @_racksmeta.target() + '/stats', callback
             return raw

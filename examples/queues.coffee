@@ -15,9 +15,10 @@ new RacksJS {
     #    console.log resp
     #rs.cloudQueues.queues.assume('testQ').setMetadata { "testfield" : "testdata" }, (resp, responseObj) ->
     #    console.log responseObj.statusCode
-    rs.cloudQueues.queues.assume('testQ').getMetadata (resp) ->
+    #rs.cloudQueues.queues.assume('testQ').getMetadata (resp) ->
+    #    console.log resp
+    rs.cloudQueues.queues.assume('testQ').stats (resp) ->
         console.log resp
-
 
     #console.log rs.cloudQueues.queues.delete.toString()
 	#$console.log rs.cloudQueues.queues.new.toString()
