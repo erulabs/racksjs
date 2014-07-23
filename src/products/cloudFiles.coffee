@@ -33,6 +33,8 @@ module.exports = (rack) ->
                     rack.get @_racksmeta.target(), callback
                 delete: (callback) ->
                     rack.delete @_racksmeta.target(), callback
+                updateMetadata: (metadata, callback) ->
+                    rack.post @_racksmeta.target(), {}, metadata, callback
                 bulkDelete: (files, callback) ->
                     if files.length > 10000
                         rack.logerror 'bulkDelete is limited to deleting 10000 items at once. You tried to delete', files.length

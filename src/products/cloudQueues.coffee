@@ -23,4 +23,10 @@ module.exports = (rack) ->
                 rack.delete @_racksmeta.target(), callback
             raw.check = (callback) ->
                 rack.get @_racksmeta.target(), callback
+            raw.setMetadata = (options, callback) ->
+                if !options.metadata? then options = { 'metadata': options }
+                if !callback? then callback = -> return false
+                rack.put @_racksmeta.target() + '/metadata', options, callback
+            raw.getMetadata = (key, callback) ->
+                rack.get @_racksmeta.target() + '/metadata', callback
             return raw

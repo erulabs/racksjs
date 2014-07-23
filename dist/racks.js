@@ -160,7 +160,7 @@
                     reply = false;
                   }
                 }
-                return callback(reply);
+                return callback(reply, response);
               }
             });
             return response.on('error', function(error) {
@@ -182,12 +182,18 @@
       }, callback);
     };
 
-    RacksJS.prototype.post = function(url, data, callback) {
+    RacksJS.prototype.post = function(url, data, headers, callback) {
+      var realCallback;
+      realCallback = callback;
+      if (typeof headers === 'function' && (callback == null)) {
+        realCallback = headers;
+      }
       return this.https({
+        headers: headers,
         method: 'POST',
         url: url,
         data: data
-      }, callback);
+      }, realCallback);
     };
 
     RacksJS.prototype["delete"] = function(url, data, callback) {
@@ -283,7 +289,7 @@
         plaintext: resource._racksmeta.plaintext,
         method: 'GET'
       }, (function(_this) {
-        return function(reply) {
+        return function(reply, rawResponse) {
           var metaName, response;
           metaName = resource._racksmeta.name;
           if (resource._racksmeta.replyString != null) {
@@ -297,7 +303,7 @@
                   return response.push(_this.buildModel(resource, raw));
                 });
                 if (callback != null) {
-                  return callback(response);
+                  return callback(response, rawResponse);
                 }
               } else {
                 if (callback != null) {
@@ -315,10 +321,10 @@
               return response.push(_this.buildModel(resource, raw));
             });
             if (callback != null) {
-              return callback(response);
+              return callback(response, rawResponse);
             }
           } else if (callback != null) {
-            return callback(reply);
+            return callback(reply, rawResponse);
           }
         };
       })(this));
