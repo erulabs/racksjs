@@ -24,9 +24,6 @@
           };
         },
         model: function(raw) {
-          raw.listMessages = function(callback) {
-            return rack.get(this._racksmeta.target() + '/claims', callback);
-          };
           raw["delete"] = function(callback) {
             return rack["delete"](this._racksmeta.target(), callback);
           };
@@ -48,6 +45,63 @@
           };
           raw.getMetadata = function(key, callback) {
             return rack.get(this._racksmeta.target() + '/metadata', callback);
+          };
+          raw.stats = function(callback) {
+            return rack.get(this._racksmeta.target() + '/stats', callback);
+          };
+          raw.listMessages = function(clientId, options, callback) {
+            var url;
+            url = this._racksmeta.target() + '/messages?';
+            if (options != null) {
+              url = url + 'echo=true';
+              return rack.https({
+                method: 'GET',
+                url: url,
+                data: {},
+                headers: {
+                  "Client-ID": clientId
+                }
+              }, callback);
+            } else {
+              url = url + options;
+              return rack.https({
+                method: 'GET',
+                url: url,
+                data: {},
+                headers: {
+                  "Client-ID": clientId
+                }
+              }, callback);
+            }
+          };
+          raw.createMessage = function(clientId, options, callback) {
+            var url;
+            url = this._racksmeta.target() + '/messages';
+            return rack.https({
+              method: 'POST',
+              url: url,
+              data: options,
+              headers: {
+                "Client-ID": clientId
+              }
+            }, callback);
+          };
+          raw.getMessage = function(clientId, messageId, callback) {
+            var url;
+            url = this._racksmeta.target() + '/messages?';
+            if (messageId != null) {
+              url = url + 'ids=' + messageId;
+              return rack.https({
+                method: 'GET',
+                url: url,
+                data: {},
+                headers: {
+                  "Client-ID": clientId
+                }
+              }, callback);
+            } else {
+              return console.log('Please provide a message ID');
+            }
           };
           return raw;
         }

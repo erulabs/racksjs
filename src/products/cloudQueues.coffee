@@ -17,8 +17,6 @@ module.exports = (rack) ->
                     if callback?
                         callback reply
         model: (raw) ->
-            raw.listMessages = (callback) ->
-                rack.get @_racksmeta.target() + '/claims', callback
             raw.delete = (callback) ->
                 rack.delete @_racksmeta.target(), callback
             raw.check = (callback) ->
@@ -29,4 +27,24 @@ module.exports = (rack) ->
                 rack.put @_racksmeta.target() + '/metadata', options, callback
             raw.getMetadata = (key, callback) ->
                 rack.get @_racksmeta.target() + '/metadata', callback
+            raw.stats = (callback) ->
+                rack.get @_racksmeta.target() + '/stats', callback
+            raw.listMessages = (clientId, options, callback) ->
+                url =  @_racksmeta.target() + '/messages?'
+                if options?
+                    url = url + 'echo=true'
+                    rack.https { method: 'GET', url: url, data: {}, headers: { "Client-ID": clientId } }, callback
+                else
+                    url = url + options
+                    rack.https { method: 'GET', url: url, data: {}, headers: { "Client-ID": clientId } }, callback
+            raw.createMessage = (clientId, options, callback) ->
+                url = @_racksmeta.target() + '/messages'
+                rack.https { method: 'POST', url: url, data: options, headers: { "Client-ID": clientId } }, callback
+            raw.getMessage = (clientId, messageId, callback) ->
+                url =  @_racksmeta.target() + '/messages?'
+                if messageId?
+                    url = url + 'ids=' + messageId
+                    rack.https { method: 'GET', url: url, data: {}, headers: { "Client-ID": clientId } }, callback
+                else
+                    console.log 'Please provide a message ID'
             return raw
