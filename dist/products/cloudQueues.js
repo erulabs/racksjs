@@ -33,6 +33,22 @@
           raw.check = function(callback) {
             return rack.get(this._racksmeta.target(), callback);
           };
+          raw.setMetadata = function(options, callback) {
+            if (options.metadata == null) {
+              options = {
+                'metadata': options
+              };
+            }
+            if (callback == null) {
+              callback = function() {
+                return false;
+              };
+            }
+            return rack.put(this._racksmeta.target() + '/metadata', options, callback);
+          };
+          raw.getMetadata = function(key, callback) {
+            return rack.get(this._racksmeta.target() + '/metadata', callback);
+          };
           return raw;
         }
       }

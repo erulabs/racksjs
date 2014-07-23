@@ -3,7 +3,7 @@ RacksJS = require '../dist/racks.js'
 new RacksJS {
   username: process.argv[3]
   apiKey: process.argv[4]
-  verbosity: 1
+  verbosity: 5
 }, (rs) ->
     #rs.cloudQueues.queues.new 'testQ', (resp) ->
     #    console.log resp
@@ -11,8 +11,13 @@ new RacksJS {
     #    console.log resp
     #rs.cloudQueues.queues.all (resp) ->
     #    console.log resp
-    rs.cloudQueues.queues.assume('testQ').check (resp) ->
+    #rs.cloudQueues.queues.assume('testQ').check (resp) ->
+    #    console.log resp
+    #rs.cloudQueues.queues.assume('testQ').setMetadata { "testfield" : "testdata" }, (resp, responseObj) ->
+    #    console.log responseObj.statusCode
+    rs.cloudQueues.queues.assume('testQ').getMetadata (resp) ->
         console.log resp
+
 
     #console.log rs.cloudQueues.queues.delete.toString()
 	#$console.log rs.cloudQueues.queues.new.toString()
