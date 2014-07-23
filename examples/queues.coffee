@@ -17,8 +17,15 @@ new RacksJS {
     #    console.log responseObj.statusCode
     #rs.cloudQueues.queues.assume('testQ').getMetadata (resp) ->
     #    console.log resp
-    rs.cloudQueues.queues.assume('testQ').stats (resp) ->
+    #rs.cloudQueues.queues.assume('testQ').stats (resp) ->
+    #    console.log resp
+    rs.cloudQueues.queues.assume('testQ').listMessages 'e58668fc-26eb-11e3-8270-5b3128d43830', 'echo=true', (resp) ->
         console.log resp
+
+
+
+
+
 
     #console.log rs.cloudQueues.queues.delete.toString()
 	#$console.log rs.cloudQueues.queues.new.toString()

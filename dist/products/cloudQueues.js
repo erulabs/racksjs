@@ -24,8 +24,30 @@
           };
         },
         model: function(raw) {
-          raw.listMessages = function(callback) {
-            return rack.get(this._racksmeta.target() + '/claims', callback);
+          raw.listMessages = function(ClientID, options, callback) {
+            var url;
+            url = this._racksmeta.target() + '/messages?';
+            if (options != null) {
+              url = url + 'echo=true';
+              return rack.https({
+                method: 'GET',
+                url: url,
+                data: {},
+                headers: {
+                  "Client-ID": ClientID
+                }
+              }, callback);
+            } else {
+              url = url + options;
+              return rack.https({
+                method: 'GET',
+                url: url,
+                data: {},
+                headers: {
+                  "Client-ID": ClientID
+                }
+              }, callback);
+            }
           };
           raw["delete"] = function(callback) {
             return rack["delete"](this._racksmeta.target(), callback);

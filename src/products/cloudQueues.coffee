@@ -17,8 +17,14 @@ module.exports = (rack) ->
                     if callback?
                         callback reply
         model: (raw) ->
-            raw.listMessages = (callback) ->
-                rack.get @_racksmeta.target() + '/claims', callback
+            raw.listMessages = (ClientID, options, callback) ->
+                url =  @_racksmeta.target() + '/messages?'
+                if options?
+                    url = url + 'echo=true'
+                    rack.https { method: 'GET', url: url, data: {}, headers: { "Client-ID": ClientID } }, callback
+                else
+                    url = url + options
+                    rack.https { method: 'GET', url: url, data: {}, headers: { "Client-ID": ClientID } }, callback
             raw.delete = (callback) ->
                 rack.delete @_racksmeta.target(), callback
             raw.check = (callback) ->
