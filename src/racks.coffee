@@ -125,7 +125,11 @@ module.exports = class RacksJS
             if opts.data? then request.write opts.data
             request.end()
     get: (url, callback) -> @https { method: 'GET', url: url }, callback
-    post: (url, data, callback) -> @https { method: 'POST', url: url, data: data }, callback
+    post: (url, data, headers, callback) ->
+        realCallback = callback
+        if typeof headers is 'function' and !callback?
+            realCallback = headers
+        @https { headers: headers, method: 'POST', url: url, data: data }, realCallback
     delete: (url, data, callback) ->
         unless data?
             data = {}

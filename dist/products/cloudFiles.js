@@ -45,6 +45,9 @@
             "delete": function(callback) {
               return rack["delete"](this._racksmeta.target(), callback);
             },
+            updateMetadata: function(metadata, callback) {
+              return rack.post(this._racksmeta.target(), {}, metadata, callback);
+            },
             bulkDelete: function(files, callback) {
               var file, fixedFiles, url, _i, _len;
               if (files.length > 10000) {

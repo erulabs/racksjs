@@ -182,12 +182,18 @@
       }, callback);
     };
 
-    RacksJS.prototype.post = function(url, data, callback) {
+    RacksJS.prototype.post = function(url, data, headers, callback) {
+      var realCallback;
+      realCallback = callback;
+      if (typeof headers === 'function' && (callback == null)) {
+        realCallback = headers;
+      }
       return this.https({
+        headers: headers,
         method: 'POST',
         url: url,
         data: data
-      }, callback);
+      }, realCallback);
     };
 
     RacksJS.prototype["delete"] = function(url, data, callback) {
