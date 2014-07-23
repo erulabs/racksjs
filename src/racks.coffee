@@ -119,7 +119,7 @@ module.exports = class RacksJS
                         if typeof reply is 'string'
                             if reply.length is 0
                                 reply = false
-                        callback reply
+                        callback reply, response
                 response.on 'error', (error) => @log error, opts
             # Write data down the pipe (in the case of POST and PUTs, etc)
             if opts.data? then request.write opts.data
@@ -182,7 +182,7 @@ module.exports = class RacksJS
             url: resource._racksmeta.target()
             plaintext: resource._racksmeta.plaintext
             method: 'GET'
-        }, (reply) =>
+        }, (reply, rawResponse) =>
             metaName = resource._racksmeta.name
             if resource._racksmeta.replyString? then metaName = resource._racksmeta.replyString
             # Most good API resources reply this way: ie: get /servers (what we call servers.all())
@@ -196,7 +196,7 @@ module.exports = class RacksJS
                         response = []
                         reply[metaName].forEach (raw) =>
                             response.push @buildModel resource, raw
-                        if callback? then callback response
+                        if callback? then callback response, rawResponse
                     else
                         if callback? then callback @buildModel resource, reply[metaName]
                 else
@@ -205,9 +205,9 @@ module.exports = class RacksJS
                 response = []
                 reply.forEach (raw) =>
                     response.push @buildModel resource, raw
-                if callback? then callback response
+                if callback? then callback response, rawResponse
             else if callback?
-                callback reply
+                callback reply, rawResponse
     subResource: (resource, id, subResource) ->
         @buildResource resource._racksmeta.product, resource._racksmeta.name + '/' + subResource, {
             _racksmeta:
