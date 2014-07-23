@@ -47,4 +47,19 @@ module.exports = (rack) ->
                     rack.https { method: 'GET', url: url, data: {}, headers: { "Client-ID": clientId } }, callback
                 else
                     console.log 'Please provide a message ID'
+            raw.getMessageDetails = (clientId, messageId, callback) ->
+                url =  @_racksmeta.target() + '/messages/'
+                if messageId?
+                    url = url + messageId
+                    rack.https { method: 'GET', url: url, data: {}, headers: { "Client-ID": clientId } }, callback
+                else
+                    console.log 'Please provide a message ID'
+            raw.deleteMessages = (clientId, messageIds, callback) ->
+                url =  @_racksmeta.target() + '/messages?'
+                if messageIds?
+                    url = url + 'ids=' + messageIds
+                    rack.https { method: 'DELETE', url: url, data: {}, headers: { "Client-ID": clientId } }, callback
+                else
+                    console.log 'Please provide a message ID'
+            raw.deleteMessage = raw.deleteMessages
             return raw

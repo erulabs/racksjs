@@ -103,6 +103,41 @@
               return console.log('Please provide a message ID');
             }
           };
+          raw.getMessageDetails = function(clientId, messageId, callback) {
+            var url;
+            url = this._racksmeta.target() + '/messages/';
+            if (messageId != null) {
+              url = url + messageId;
+              return rack.https({
+                method: 'GET',
+                url: url,
+                data: {},
+                headers: {
+                  "Client-ID": clientId
+                }
+              }, callback);
+            } else {
+              return console.log('Please provide a message ID');
+            }
+          };
+          raw.deleteMessages = function(clientId, messageIds, callback) {
+            var url;
+            url = this._racksmeta.target() + '/messages?';
+            if (messageIds != null) {
+              url = url + 'ids=' + messageIds;
+              return rack.https({
+                method: 'DELETE',
+                url: url,
+                data: {},
+                headers: {
+                  "Client-ID": clientId
+                }
+              }, callback);
+            } else {
+              return console.log('Please provide a message ID');
+            }
+          };
+          raw.deleteMessage = raw.deleteMessages;
           return raw;
         }
       }
