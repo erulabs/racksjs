@@ -47,4 +47,39 @@ module.exports = (rack) ->
                     rack.https { method: 'GET', url: url, data: {}, headers: { "Client-ID": clientId } }, callback
                 else
                     console.log 'Please provide a message ID'
+            raw.getMessageDetails = (clientId, messageId, callback) ->
+                url =  @_racksmeta.target() + '/messages/'
+                if messageId?
+                    url = url + messageId
+                    rack.https { method: 'GET', url: url, data: {}, headers: { "Client-ID": clientId } }, callback
+                else
+                    console.log 'Please provide a message ID'
+            raw.deleteMessages = (clientId, messageIds, callback) ->
+                url =  @_racksmeta.target() + '/messages?'
+                if messageIds?
+                    url = url + 'ids=' + messageIds
+                    rack.https { method: 'DELETE', url: url, data: {}, headers: { "Client-ID": clientId } }, callback
+                else
+                    console.log 'Please provide a message ID'
+            raw.claimMessages = (clientId, options, callback) ->
+                url = @_racksmeta.target() + '/claims?limit=' + options.limit
+                data = {
+                    "ttl": options.ttl,
+                    "grace": options.grace
+                }
+                rack.https { method: 'POST', url: url, data: data, headers: { "Client-ID": clientId } }, callback
+            raw.claimDetails = (clientId, claimId, options, callback) ->
+                url = @_racksmeta.target() + '/claims/' + claimId
+                rack.https { method: 'GET', url: url, data: {}, headers: { "Client-ID": clientId } }, callback
+            raw.updateClaim = (clientId, claimId, options, callback) ->
+                url = @_racksmeta.target() + '/claims/' + claimId
+                data = {
+                    "ttl": options.ttl,
+                    "grace": options.grace
+                }
+                rack.https { method: 'PATCH', url: url, data: data, headers: { "Client-ID": clientId } }, callback
+            raw.deleteClaim = (clientId, claimId, callback) ->
+                url =  @_racksmeta.target() + '/claims/' + claimId
+                rack.https { method: 'DELETE', url: url, data: {}, headers: { "Client-ID": clientId } }, callback
+            raw.deleteMessage = raw.deleteMessages
             return raw
