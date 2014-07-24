@@ -137,6 +137,62 @@
               return console.log('Please provide a message ID');
             }
           };
+          raw.claimMessages = function(clientId, options, callback) {
+            var data, url;
+            url = this._racksmeta.target() + '/claims?limit=' + options.limit;
+            data = {
+              "ttl": options.ttl,
+              "grace": options.grace
+            };
+            return rack.https({
+              method: 'POST',
+              url: url,
+              data: data,
+              headers: {
+                "Client-ID": clientId
+              }
+            }, callback);
+          };
+          raw.claimDetails = function(clientId, claimId, options, callback) {
+            var url;
+            url = this._racksmeta.target() + '/claims/' + claimId;
+            return rack.https({
+              method: 'GET',
+              url: url,
+              data: {},
+              headers: {
+                "Client-ID": clientId
+              }
+            }, callback);
+          };
+          raw.updateClaim = function(clientId, claimId, options, callback) {
+            var data, url;
+            url = this._racksmeta.target() + '/claims/' + claimId;
+            data = {
+              "ttl": options.ttl,
+              "grace": options.grace
+            };
+            return rack.https({
+              method: 'PATCH',
+              url: url,
+              data: data,
+              headers: {
+                "Client-ID": clientId
+              }
+            }, callback);
+          };
+          raw.deleteClaim = function(clientId, claimId, callback) {
+            var url;
+            url = this._racksmeta.target() + '/claims/' + claimId;
+            return rack.https({
+              method: 'DELETE',
+              url: url,
+              data: {},
+              headers: {
+                "Client-ID": clientId
+              }
+            }, callback);
+          };
           raw.deleteMessage = raw.deleteMessages;
           return raw;
         }
