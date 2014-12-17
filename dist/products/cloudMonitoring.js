@@ -3,9 +3,6 @@
   module.exports = function(rack) {
     return {
       entities: {
-        _racksmeta: {
-          dontWrap: true
-        },
         model: function(raw) {
           raw.details = function(callback) {
             return rack.get(this._racksmeta.target(), callback);
