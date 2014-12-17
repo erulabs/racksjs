@@ -62,7 +62,7 @@ module.exports = (rack) ->
                     allObjects = []
                     url = @_racksmeta.target()
                     if marker?
-                        url = url + '&marker=' + marker
+                        url = url + '?marker=' + marker
                     rack.https {
                         method: 'GET',
                         plaintext: true,

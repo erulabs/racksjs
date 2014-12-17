@@ -93,7 +93,7 @@
               allObjects = [];
               url = this._racksmeta.target();
               if (marker != null) {
-                url = url + '&marker=' + marker;
+                url = url + '?marker=' + marker;
               }
               return rack.https({
                 method: 'GET',
