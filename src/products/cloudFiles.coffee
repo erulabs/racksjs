@@ -78,7 +78,7 @@ module.exports = (rack) ->
 
                     if !options.path?
                         if options.file?
-                            options.path = rack.path.basename(options.file)
+                            options.path = options.file
                         else
                             options.path = 'STREAM'
 

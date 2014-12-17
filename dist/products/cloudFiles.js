@@ -112,7 +112,7 @@
               }
               if (options.path == null) {
                 if (options.file != null) {
-                  options.path = rack.path.basename(options.file);
+                  options.path = options.file;
                 } else {
                   options.path = 'STREAM';
                 }
