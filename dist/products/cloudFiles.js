@@ -89,11 +89,12 @@
               });
             },
             listObjects: function(callback, marker) {
-              var allObjects, url;
-              allObjects = [];
+              var url;
               url = this._racksmeta.target();
               if (marker != null) {
                 url = url + '?marker=' + marker;
+              } else {
+                this._tmp_allObjects = [];
               }
               return rack.https({
                 method: 'GET',
@@ -101,11 +102,12 @@
                 url: url
               }, (function(_this) {
                 return function(reply) {
-                  allObjects = allObjects.concat(reply);
-                  if (reply.length === 10000) {
-                    return _this.listObjects(callback, reply[reply.length - 1]);
+                  _this._tmp_allObjects = _this._tmp_allObjects.concat(reply);
+                  if (reply.length === 0) {
+                    callback(_this._tmp_allObjects);
+                    return _this._tmp_allObjects = [];
                   } else {
-                    return callback(allObjects);
+                    return _this.listObjects(callback, reply[reply.length - 1]);
                   }
                 };
               })(this));
