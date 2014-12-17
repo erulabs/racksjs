@@ -58,12 +58,21 @@ module.exports = (rack) ->
                                 self.forceEmpty(callback)
                         else if callback?
                             callback(true)
-                listObjects: (callback) ->
+                listObjects: (callback, marker) ->
+                    allObjects = []
+                    url = @_racksmeta.target()
+                    if marker?
+                        url = url + '&marker=' + marker
                     rack.https {
                         method: 'GET',
                         plaintext: true,
-                        url: @_racksmeta.target()
-                    }, callback
+                        url: url
+                    }, (reply) =>
+                        allObjects = allObjects.concat(reply)
+                        if reply.length is 10000
+                            @.listObjects(callback, reply[reply.length - 1])
+                        else
+                            callback(allObjects)
                 upload: (options, callback) ->
                     if !options?
                         options = {}

@@ -88,12 +88,27 @@
                 }
               });
             },
-            listObjects: function(callback) {
+            listObjects: function(callback, marker) {
+              var allObjects, url;
+              allObjects = [];
+              url = this._racksmeta.target();
+              if (marker != null) {
+                url = url + '&marker=' + marker;
+              }
               return rack.https({
                 method: 'GET',
                 plaintext: true,
-                url: this._racksmeta.target()
-              }, callback);
+                url: url
+              }, (function(_this) {
+                return function(reply) {
+                  allObjects = allObjects.concat(reply);
+                  if (reply.length === 10000) {
+                    return _this.listObjects(callback, reply[reply.length - 1]);
+                  } else {
+                    return callback(allObjects);
+                  }
+                };
+              })(this));
             },
             upload: function(options, callback) {
               var apiStream, inputStream, url;
