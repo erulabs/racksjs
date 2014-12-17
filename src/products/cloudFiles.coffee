@@ -1,4 +1,5 @@
-"use strict";
+"use strict"
+querystring = require 'querystring'
 # http://docs.rackspace.com/files/api/v1/cf-devguide/content/API_Operations_for_Storage_Services-d1e942.html
 module.exports = (rack) ->
     containers:
@@ -78,7 +79,7 @@ module.exports = (rack) ->
 
                     if !options.path?
                         if options.file?
-                            options.path = options.file
+                            options.path = querystring.escape(options.file)
                         else
                             options.path = 'STREAM'
 

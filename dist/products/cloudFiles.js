@@ -1,5 +1,9 @@
 (function() {
   "use strict";
+  var querystring;
+
+  querystring = require('querystring');
+
   module.exports = function(rack) {
     return {
       containers: {
@@ -112,7 +116,7 @@
               }
               if (options.path == null) {
                 if (options.file != null) {
-                  options.path = options.file;
+                  options.path = querystring.escape(options.file);
                 } else {
                   options.path = 'STREAM';
                 }
