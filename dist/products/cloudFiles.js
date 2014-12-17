@@ -133,7 +133,7 @@
               }
               if (options.path == null) {
                 if (options.file != null) {
-                  options.path = querystring.escape(options.file);
+                  options.path = encodeURIComponent(options.file);
                 } else {
                   options.path = 'STREAM';
                 }
@@ -150,6 +150,7 @@
               url = rack.url.parse(this._racksmeta.target());
               options.host = url.host;
               options.path = url.path + '/' + options.path;
+              console.log('UPLOADING, PATH:', options.path);
               options.container = this.name;
               apiStream = rack.https_node.request(options, callback);
               if (inputStream) {

@@ -91,7 +91,7 @@ module.exports = (rack) ->
 
                     if !options.path?
                         if options.file?
-                            options.path = querystring.escape(options.file)
+                            options.path = encodeURIComponent(options.file)
                         else
                             options.path = 'STREAM'
 
@@ -106,6 +106,7 @@ module.exports = (rack) ->
                     url = rack.url.parse this._racksmeta.target()
                     options.host = url.host
                     options.path = url.path + '/' + options.path
+                    console.log 'UPLOADING, PATH:', options.path
                     options.container = this.name
 
                     apiStream = rack.https_node.request options, callback
