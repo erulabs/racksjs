@@ -58,10 +58,16 @@ module.exports = (rack) ->
                                 self.forceEmpty(callback)
                         else if callback?
                             callback(true)
-                listObjects: (callback, marker) ->
+                listObjects: (callback) ->
+                    rack.https {
+                        method: 'GET',
+                        plaintext: true,
+                        url: @_racksmeta.target()
+                    }, callback
+                listAllObjects: (callback, marker) ->
                     url = @_racksmeta.target()
                     if marker?
-                        url = url + '?marker=' + marker
+                        url = url + '?marker=' + encodeURIComponent(marker)
                     else
                         @_tmp_allObjects = []
                     rack.https {
@@ -74,7 +80,7 @@ module.exports = (rack) ->
                             callback(@_tmp_allObjects)
                             @_tmp_allObjects = []
                         else
-                            @.listObjects(callback, reply[reply.length - 1])
+                            @.listAllObjects(callback, reply[reply.length - 1])
 
                 upload: (options, callback) ->
                     if !options?

@@ -88,11 +88,18 @@
                 }
               });
             },
-            listObjects: function(callback, marker) {
+            listObjects: function(callback) {
+              return rack.https({
+                method: 'GET',
+                plaintext: true,
+                url: this._racksmeta.target()
+              }, callback);
+            },
+            listAllObjects: function(callback, marker) {
               var url;
               url = this._racksmeta.target();
               if (marker != null) {
-                url = url + '?marker=' + marker;
+                url = url + '?marker=' + encodeURIComponent(marker);
               } else {
                 this._tmp_allObjects = [];
               }
@@ -107,7 +114,7 @@
                     callback(_this._tmp_allObjects);
                     return _this._tmp_allObjects = [];
                   } else {
-                    return _this.listObjects(callback, reply[reply.length - 1]);
+                    return _this.listAllObjects(callback, reply[reply.length - 1]);
                   }
                 };
               })(this));
