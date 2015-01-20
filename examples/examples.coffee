@@ -171,6 +171,25 @@ new RacksJS {
     #       console.log 'server object:', server, 'server details', details
     #       server.delete()
 
+    # You can also create a user with a bootable volume quite easily:
+    # rs.servers.new {
+    #     'name': 'bootable_volume_test'
+    #     'flavorRef': 'compute1-4'
+    #     'imageRef': ''
+    #     'block_device_mapping_v2': [
+    #         {
+    #             "boot_index":"0"
+    #             "uuid":"753a7703-4960-488b-aab4-a3cdd4b276dc"
+    #             "volume_size":"100"
+    #             "source_type":"image"
+    #             "destination_type":"volume"
+    #             "delete_on_termination":false
+    #         }
+    #     ]
+    #     "max_count":1
+    #     "min_count":1
+    # }, (server) ->
+
     # You dont have to make needless HTTP calls if you already know an assets ID. Just "assume" it exists.
     #rs.servers.assume('SOME_UUID').rebuild {
     #   imageRef: 'SOME_UUID'
