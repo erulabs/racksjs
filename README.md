@@ -16,7 +16,7 @@ Proper documentation and a lot more examples are soon to come - we're still miss
   3. If you've installed the NPM module, you can use the below example to get started on a script.
   4. Authenticate with a "username" and "apiKey" (see below)
 
-```CoffeeScript
+```JavaScript
 // Include racks.js and start it with a few settings
 new (require('racksjs'))({
     username: 'Rackspace cloud username',
