@@ -6,14 +6,14 @@
   "contributors": [
     "Matt Ellsworth"
   ],
-  "version": "0.2.12",
+  "version": "0.2.13",
   "main": "./dist/racks.js",
   "keywords": [
     "rackspace",
     "cloud sdk"
   ],
   "dependencies": {
-    "commander": "^2.2.0"
+    "commander": "^2.6.0"
   },
   "engines": {
     "node": ">=0.10"
@@ -24,16 +24,16 @@
     "url": "git@github.com:erulabs/racksjs.git"
   },
   "devDependencies": {
-    "gulp": "^3.8.0",
-    "gulp-coffee": "^2.0.1",
-    "gulp-coffeelint": "^0.3.3",
-    "gulp-concat": "^2.2.0",
-    "gulp-jshint": "^1.6.2",
+    "gulp": "^3.8.11",
+    "gulp-coffee": "^2.3.1",
+    "gulp-coffeelint": "^0.3.4",
+    "gulp-concat": "^2.5.2",
+    "gulp-jshint": "^1.9.2",
     "gulp-rename": "^1.2.0",
     "gulp-uglify": "^0.3.0",
-    "gulp-util": "^2.2.16",
+    "gulp-util": "^2.2.20",
     "jshint-stylish": "^0.2.0",
-    "mocha": "^1.20.1"
+    "mocha": "^1.21.5"
   },
   "scripts": {
     "test": "make test-all"

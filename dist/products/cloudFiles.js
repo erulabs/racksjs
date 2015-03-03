@@ -52,6 +52,15 @@
             updateMetadata: function(metadata, callback) {
               return rack.post(this._racksmeta.target(), {}, metadata, callback);
             },
+            enableCORSHeader: function(uri, callback) {
+              return rack.https({
+                method: 'HEAD',
+                url: this._racksmeta.target(),
+                headers: {
+                  "X-Container-Meta-Access-Control-Allow-Origin": uri
+                }
+              }, callback);
+            },
             bulkDelete: function(files, callback) {
               var file, fixedFiles, url, _i, _len;
               if (files.length > 10000) {

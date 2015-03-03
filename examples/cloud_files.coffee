@@ -22,11 +22,12 @@ new RacksJS {
 
 	log = console.log
 
+	rs.datacenter = 'IAD'
+	#rs.network = 'internal'
 
-	container = rs.files.assume('culled IPDC objects 20140508')
-	#container.listObjects (allFiles) ->
-	#	console.log allFiles
-	#	container.bulkDelete allFiles
+	container = rs.files.assume('cdn.example.com')
+	container.listObjects (allFiles) ->
+		container.bulkDelete allFiles
 
 
-	container.forceEmpty()
+	#container.forceEmpty()

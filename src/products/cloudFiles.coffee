@@ -36,6 +36,10 @@ module.exports = (rack) ->
                     rack.delete @_racksmeta.target(), callback
                 updateMetadata: (metadata, callback) ->
                     rack.post @_racksmeta.target(), {}, metadata, callback
+                enableCORSHeader: (uri, callback) ->
+                    rack.https { method: 'HEAD', url: @_racksmeta.target(), headers: {
+                        "X-Container-Meta-Access-Control-Allow-Origin": uri,
+                    } }, callback
                 bulkDelete: (files, callback) ->
                     if files.length > 10000
                         rack.logerror 'bulkDelete is limited to deleting 10000 items at once. You tried to delete', files.length

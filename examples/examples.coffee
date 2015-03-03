@@ -35,8 +35,12 @@ new RacksJS {
     #
     # at any time.
 
+    #rs.cloudImages.images.assume('some_uuid_goes_here').members (out) ->
+    #	    console.log out
+    #console.log rs.cloudFiles.containers.assume('cdn.example.com')._racksmeta.target()
+
     # Utilies
-    #rs.utils.rebuildLB '236777', (result) ->
+    #rs.utils.rebuildLB 'LB_ID', (result) ->
     #   if result
     #       console.log 'done'
 
@@ -59,6 +63,10 @@ new RacksJS {
     #       file: 'path_of_file_to_upload'
     #   }, (reply) ->
     #       console.log reply.statusCode
+
+    # Enable a CORS header on a container
+    # rs.cloudFiles.containers.assume('container_name').enableCORSHeader 'http://www.example.com http://stage.example.com', (reply) ->
+    #   console.log reply
 
     # rs.cloudFiles.containers.new { name: 'somenewTestContainer' }
 
@@ -118,6 +126,7 @@ new RacksJS {
     #rs.cloudMonitoring.entities.assume(process.argv[5]).createAlarm { ..jsonstuff.. }, (reply) -> log reply
 
 
+
     #rs.cloudFiles.containers.all (containers) ->
     #   console.log containers
 
@@ -134,7 +143,7 @@ new RacksJS {
     #console.log rs.nextgen.images._racksmeta.target()
     #
     # Cloud load balancers...
-    #rs.clbs.assume('231229').details (reply) ->
+    #rs.clbs.assume('CLB_ID').details (reply) ->
     #   console.log reply
 
     # Some services which normally return ugly plaintext (like OpenStack's Swift AKA CloudFiles)
