@@ -4,6 +4,8 @@ __An unoffical javascript SDK for the Rackspace Cloud__
 
 by Seandon Mooy with contributions from Matt Ellsworth
 
+[![NPM](https://nodei.co/npm/racksjs.png?downloads=true&downloadRank=true&stars=true)](https://nodei.co/npm/racksjs/)
+
 ### About / News ###
 
 Racksjs is mostly an attempt by the author to get intimate with the Rackspace API. It's also quite nice to script with - particularly because it doesn't invent any vocabulary - it simply wraps the rackspace api documentation as closely as possible.
